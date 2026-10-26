@@ -1,5 +1,5 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
+  <q-layout view="hHh Lpr fFf">
     <q-header elevated class="dashboard-header">
       <q-toolbar class="dashboard-toolbar">
         <q-btn
@@ -30,8 +30,6 @@
 
         <q-space />
 
-
-        <!-- User Profile Menu -->
         <q-btn-dropdown
           flat
           no-caps
@@ -68,7 +66,7 @@
 
             <q-separator />
 
-            <q-item clickable v-close-popup @click="showLogoutDialog = true">
+            <q-item clickable v-close-popup @click="confirmLogout">
               <q-item-section avatar>
                 <q-icon name="logout" color="negative" />
               </q-item-section>
@@ -83,18 +81,17 @@
 
     <q-drawer
       v-model="leftDrawerOpen"
-      show-if-above
       :width="260"
-      :breakpoint="1024"
+      :breakpoint="0"
       bordered
+      elevated
       class="dashboard-drawer"
+      :overlay="$q.screen.lt.md"
+      :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
     >
       <q-scroll-area class="fit">
         <div class="q-pa-md">
-          <div class="drawer-header q-mb-md">
-            <div class="text-h6 text-weight-bold text-purple-10">Menú Principal</div>
-            <div class="text-caption text-grey-7">Panel de Control</div>
-          </div>
+
 
           <q-list class="menu-list">
             <q-item
@@ -111,6 +108,14 @@
                 <q-item-label>Dashboard</q-item-label>
                 <q-item-label caption>Vista general</q-item-label>
               </q-item-section>
+              <q-tooltip
+                anchor="center right"
+                self="center left"
+                :offset="[10, 0]"
+                v-if="miniState"
+              >
+                Dashboard
+              </q-tooltip>
             </q-item>
 
             <q-item
@@ -127,6 +132,14 @@
                 <q-item-label>Test Resultados</q-item-label>
                 <q-item-label caption>Tus resultados</q-item-label>
               </q-item-section>
+              <q-tooltip
+                anchor="center right"
+                self="center left"
+                :offset="[10, 0]"
+                v-if="miniState"
+              >
+                Test Resultados
+              </q-tooltip>
             </q-item>
 
             <q-item
@@ -143,11 +156,18 @@
                 <q-item-label>Configuraciones</q-item-label>
                 <q-item-label caption>Ajustes</q-item-label>
               </q-item-section>
+              <q-tooltip
+                anchor="center right"
+                self="center left"
+                :offset="[10, 0]"
+                v-if="miniState"
+              >
+                Configuraciones
+              </q-tooltip>
             </q-item>
           </q-list>
         </div>
 
-        <!-- Menú de Administración (solo para admin) -->
         <template v-if="isAdmin">
           <q-separator class="q-my-md" />
 
@@ -163,18 +183,42 @@
             <q-list class="menu-list">
               <q-item
                 clickable
+                :active="$route.path === '/dashboard/admin'"
+                @click="$router.push('/dashboard/admin')"
+                active-class="active-menu-item"
+                class="menu-item admin-menu-item"
+              >
+                <q-item-section avatar>
+                  <q-icon name="analytics" color="orange-8" />
+                </q-item-section>
+                <q-item-section>
+                  <q-item-label>Panel de Estadísticas</q-item-label>
+                  <q-item-label caption>Tests y usuarios</q-item-label>
+                </q-item-section>
+              </q-item>
+
+              <q-item
+                clickable
                 :active="$route.path === '/dashboard/admin/preguntas'"
                 @click="$router.push('/dashboard/admin/preguntas')"
                 active-class="active-menu-item"
-                class="menu-item"
+                class="menu-item admin-menu-item"
               >
                 <q-item-section avatar>
-                  <q-icon name="help_outline" />
+                  <q-icon name="help_outline" color="orange-8" />
                 </q-item-section>
                 <q-item-section>
                   <q-item-label>Administrar Preguntas</q-item-label>
                   <q-item-label caption>Editar test OEJTS</q-item-label>
                 </q-item-section>
+                <q-tooltip
+                  anchor="center right"
+                  self="center left"
+                  :offset="[10, 0]"
+                  v-if="miniState"
+                >
+                  Administrar Preguntas
+                </q-tooltip>
               </q-item>
             </q-list>
           </div>
@@ -188,33 +232,35 @@
       <router-view />
     </q-page-container>
 
-    <ConfirmDialog
-      v-model="showLogoutDialog"
-      title="Cerrar Sesión"
-      message="¿Estás seguro que deseas cerrar sesión?"
-      icon="logout"
-      @ok="confirmLogout"
-    />
   </q-layout>
 </template>
 
 <script>
-import { defineComponent, ref, computed, onMounted } from 'vue'
+import { defineComponent, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import ConfirmDialog from 'src/components/common/ConfirmDialog.vue'
-import { Notify } from 'quasar'
+import { Notify, useQuasar } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
 
 export default defineComponent({
   name: 'DashboardLayout',
-  components: {
-    ConfirmDialog
-  },
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
+    const $q = useQuasar()
+    // Iniciar con menú cerrado siempre
     const leftDrawerOpen = ref(false)
-    const showLogoutDialog = ref(false)
+    const miniState = ref(false)
+    let lastScrollY = 0
+
+    // Función para cerrar el menú al hacer scroll hacia abajo
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      // Si el usuario hace scroll hacia abajo y el menú está abierto, cerrarlo
+      if (currentScrollY > lastScrollY && leftDrawerOpen.value) {
+        leftDrawerOpen.value = false
+      }
+      lastScrollY = currentScrollY
+    }
 
     const isAdmin = computed(() => {
       return authStore.userRoles?.includes('administrador') || false
@@ -223,6 +269,9 @@ export default defineComponent({
     const toggleLeftDrawer = () => {
       leftDrawerOpen.value = !leftDrawerOpen.value
     }
+
+    // Se eliminó la función pageContainerStyle y su lógica,
+    // ya que causaba conflicto con el margen automático de Quasar.
 
     const goToSettings = () => {
       router.push('/dashboard/configuraciones')
@@ -236,24 +285,36 @@ export default defineComponent({
         icon: 'check_circle',
         position: 'top'
       })
-      router.push('/auth/login')
+      // Usar replace para que no pueda volver atrás y recargar la página
+      router.replace('/auth/login').then(() => {
+        window.location.reload()
+      })
     }
 
-    // Check authentication on mount
+    // Check authentication on mount and add scroll listener
     onMounted(() => {
       if (!authStore.isAuthenticated) {
         router.push('/auth/login')
       }
+      // Agregar listener para cerrar menú al hacer scroll
+      window.addEventListener('scroll', handleScroll, { passive: true })
+    })
+
+    // Limpiar el listener cuando se desmonte el componente
+    onUnmounted(() => {
+      window.removeEventListener('scroll', handleScroll)
     })
 
     return {
       leftDrawerOpen,
+      miniState,
+      // pageContainerStyle, // Eliminado
       authStore,
       isAdmin,
       toggleLeftDrawer,
       goToSettings,
-      showLogoutDialog,
-      confirmLogout
+      confirmLogout,
+      $q
     }
   }
 })
@@ -265,6 +326,7 @@ export default defineComponent({
   color: white;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
+  height: 64px;
 }
 
 .dashboard-header::before {
@@ -278,8 +340,36 @@ export default defineComponent({
   pointer-events: none;
 }
 
+/* Prevenir scroll horizontal cuando el drawer está abierto */
+:deep(.q-layout) {
+  overflow-x: hidden;
+}
+
+/* CORRECCIÓN CLAVE: Se eliminó 'margin: 0 !important;' del q-page-container 
+  para permitir que Quasar aplique el margen lateral y el contenido sea empujado 
+  por el q-drawer (evitando la superposición).
+*/
+:deep(.q-page-container) {
+  overflow-x: hidden;
+  padding: 0 !important;
+}
+
+:deep(.q-page) {
+  margin: 0 !important;
+}
+
+:deep(.q-header) {
+  height: 64px;
+}
+
+:deep(.q-toolbar) {
+  min-height: 64px !important;
+  height: 64px;
+}
+
 .dashboard-toolbar {
-  min-height: clamp(3rem, 6vh, 3.5rem);
+  min-height: 64px !important;
+  height: 64px;
   padding: 0 clamp(0.5rem, 1.5vw, 0.75rem);
   position: relative;
   z-index: 1;
@@ -446,6 +536,23 @@ export default defineComponent({
 
 .dashboard-drawer {
   background: #FAFAFA;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Estilos para el modo mini */
+.dashboard-drawer.q-drawer--mini {
+  .drawer-header {
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  .menu-item {
+    justify-content: center;
+  }
+  
+  .q-item__section--side {
+    padding-right: 0;
+  }
 }
 
 .drawer-header {
@@ -475,6 +582,14 @@ export default defineComponent({
 .active-menu-item :deep(.q-item__section),
 .active-menu-item :deep(.q-item__label) {
   color: white !important;
+}
+
+.admin-menu-item:hover {
+  background: rgba(251, 146, 60, 0.15);
+}
+
+.admin-menu-item.active-menu-item {
+  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%) !important;
 }
 
 /* Mobile Responsiveness */

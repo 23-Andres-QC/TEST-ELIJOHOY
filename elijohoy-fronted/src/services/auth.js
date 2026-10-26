@@ -25,17 +25,10 @@ export class AuthService {
       if (response.data.success) {
         const { user, access_token, refresh_token } = response.data.data
         
-        console.log('✅ Registro exitoso - Guardando tokens')
-        console.log('👤 Usuario:', user)
-        console.log('🔑 Access token length:', access_token.length)
-        console.log('🔄 Refresh token length:', refresh_token.length)
-        
         // Store tokens and user data in sessionStorage
         sessionStorage.setItem('access_token', access_token)
         sessionStorage.setItem('refresh_token', refresh_token)
         sessionStorage.setItem('user', JSON.stringify(user))
-        
-        console.log('💾 Tokens guardados en sessionStorage')
         
         return {
           success: true,
@@ -172,11 +165,25 @@ export class AuthService {
    */
   static async logout() {
     try {
-      await api.post('/auth/logout')
+      const response = await api.post('/auth/logout')
+      
+      if (!response.data.success) {
+        console.warn('Logout server warning:', response.data.message)
+      }
+      
+      return { success: true, message: 'Logout exitoso' }
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error('Logout error:', error.response?.data?.message || error.message)
+      
+      // Even if logout fails on server, clear local session
+      // but return the error so caller knows
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error en logout'
+      }
     } finally {
       // Always remove tokens and user data from sessionStorage
+      // This ensures user is logged out locally even if server logout fails
       sessionStorage.removeItem('access_token')
       sessionStorage.removeItem('refresh_token')
       sessionStorage.removeItem('user')
@@ -212,7 +219,7 @@ export class AuthService {
         token,
         new_password: newPassword
       })
-      
+
       return {
         success: response.data.success,
         message: response.data.message
@@ -222,6 +229,31 @@ export class AuthService {
       return {
         success: false,
         message: error.response?.data?.message || 'Error restableciendo contraseña'
+      }
+    }
+  }
+
+  /**
+   * Change password (while logged in)
+   */
+  static async changePassword(currentPassword, newPassword) {
+    try {
+      const response = await api.post('/auth/change-password', {
+        current_password: currentPassword,
+        new_password: newPassword
+      })
+
+      return {
+        success: response.data.success,
+        message: response.data.message,
+        errors: response.data.errors
+      }
+    } catch (error) {
+      console.error('Change password error:', error)
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Error cambiando contraseña',
+        errors: error.response?.data?.errors
       }
     }
   }

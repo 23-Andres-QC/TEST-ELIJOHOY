@@ -1,658 +1,661 @@
-<!-- Eliminado script setup para evitar duplicidad de imports y lógica -->
 <template>
   <q-page class="landing-page">
-    <!-- Hero Section -->
-    <div id="hero" class="hero-section">
-      <div class="container">
-        <div class="row items-center">
-          <div class="col-12 col-md-6 q-pr-md q-pa-md">
-            <div class="hero-badge q-mb-sm">
-              <q-icon name="stars" size="15px" class="q-mr-xs" />
-              Plataforma #1 en Orientación Vocacional
-            </div>
-            <h1 class="hero-title text-h2 text-weight-bold q-mb-sm">
-              ElijeHoy: Descubre tu Vocación y Construye tu Futuro
-            </h1>
+    <!-- Hero -->
+    <section
+      id="hero"
+      ref="heroRef"
+      class="hero-section"
+      @mousemove="onHeroMove"
+      @mouseleave="onHeroLeave"
+    >
+      <div class="hero-bg" aria-hidden="true">
+        <div class="blob blob--indigo" />
+        <div class="blob blob--pink" />
+        <div class="blob blob--amber" />
+        <div class="hero-grid" />
+        <span
+          v-for="p in particles"
+          :key="p.id"
+          class="particle"
+          :style="p.style"
+        />
+      </div>
 
-            <p class="hero-subtitle text-h6 q-mb-md">
-              La plataforma líder en orientación vocacional que ha ayudado a miles de jóvenes a encontrar su verdadero camino profesional. Descubre tus talentos únicos y toma decisiones educativas con confianza absoluta.
-            </p>
-
-            <div class="hero-actions" style="position: relative; z-index: 10;">
-              <q-btn
-                unelevated
-                size="lg"
-                color="purple-7"
-                label="Comenzar Test Gratuito"
-                icon="rocket_launch"
-                to="/test"
-                class="q-mr-sm q-mb-xs btn-gradient-purple"
-                no-caps
-              />
-
-              <q-btn
-                flat
-                size="lg"
-                color="white"
-                label="Iniciar Sesión"
-                icon="login"
-                to="/auth/login"
-                class="q-mb-xs btn-learn-more"
-                no-caps
-              />
-            </div>
+      <div class="container hero-layout">
+        <div class="hero-copy">
+          <div class="hero-badge">
+            <span class="hero-badge__dot" />
+            Plataforma #1 en Orientación Vocacional
           </div>
 
-          <div class="col-12 col-md-6 text-center q-mt-lg">
-            <div class="hero-image-wrapper">
-              <div class="floating-card card-1">
-                <q-icon name="psychology" size="40px" color="purple-7" />
-                <div class="text-weight-bold q-mt-sm">Test Vocacional</div>
-              </div>
-              <div class="floating-card card-2">
-                <q-icon name="school" size="40px" color="amber-8" />
-                <div class="text-weight-bold q-mt-sm">Orientación</div>
-              </div>
-              <div class="floating-card card-3">
-                <q-icon name="trending_up" size="40px" color="pink-7" />
-                <div class="text-weight-bold q-mt-sm">Seguimiento</div>
-              </div>
+          <h1 class="hero-title">
+            Descubre tu
+            <span class="hero-title__rotator">
+              <span :key="currentWord" class="hero-title__word">{{ currentWord }}</span>
+            </span>
+            y construye tu futuro
+          </h1>
+
+          <p class="hero-subtitle">
+            La plataforma de orientación vocacional que te ayuda a encontrar tu verdadero camino profesional.
+            Descubre tus talentos únicos y toma decisiones educativas con confianza.
+          </p>
+
+          <div class="hero-actions">
+            <q-btn
+              unelevated
+              no-caps
+              size="lg"
+              icon="rocket_launch"
+              label="Comenzar Test Gratuito"
+              to="/test"
+              class="btn-primary-glow"
+            />
+            <q-btn
+              flat
+              no-caps
+              size="lg"
+              icon="login"
+              label="Iniciar Sesión"
+              to="/auth/login"
+              class="btn-glass"
+            />
+          </div>
+
+          <div class="hero-proof">
+            <div class="avatar-stack">
+              <img
+                v-for="tipo in heroStack"
+                :key="tipo.codigo"
+                :src="avatarUrl(tipo.codigo)"
+                :alt="tipo.nombre"
+                width="44"
+                height="44"
+                decoding="async"
+              />
+            </div>
+            <div class="hero-proof__text">
+              <strong>16 perfiles</strong> de personalidad
+              <span>Test de 32 preguntas · 100% gratis</span>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- ¿Por qué elegir ElijeHoy? -->
-    <div id="features" class="features-section q-py-xl">
+        <div class="hero-visual">
+          <div class="hero-visual__halo" />
+          <img
+            src="/hero-avatars-rocket.webp"
+            width="1024"
+            height="943"
+            decoding="async"
+            fetchpriority="high"
+            alt="Avatares de los 16 perfiles alrededor de un cohete despegando"
+            class="hero-visual__img"
+          />
+
+          <div class="float-chip float-chip--top">
+            <q-icon name="bolt" size="18px" />
+            Resultados al instante
+          </div>
+          <div class="float-chip float-chip--left">
+            <img :src="avatarUrl('ESFJ')" alt="" width="34" height="34" />
+            <div>
+              <strong>ESFJ</strong>
+              <span>El Cónsul</span>
+            </div>
+          </div>
+          <div class="float-chip float-chip--bottom">
+            <q-icon name="workspace_premium" size="18px" />
+            Carreras para tu perfil
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="scroll-cue" aria-label="Ver más" @click="scrollTo('features')">
+        <span class="scroll-cue__mouse"><span /></span>
+      </button>
+    </section>
+
+    <!-- Marquee de perfiles -->
+    <section class="marquee-section" aria-label="Los 16 perfiles de personalidad">
+      <div
+        v-for="(row, rowIndex) in marqueeRows"
+        :key="rowIndex"
+        class="marquee"
+        :class="{ 'marquee--reverse': rowIndex === 1 }"
+      >
+        <div class="marquee__track">
+          <router-link
+            v-for="(tipo, i) in row"
+            :key="`${tipo.codigo}-${i}`"
+            to="/test"
+            class="type-pill"
+            :aria-hidden="i >= row.length / 2 ? 'true' : null"
+            :tabindex="i >= row.length / 2 ? -1 : null"
+          >
+            <img :src="avatarUrl(tipo.codigo)" :alt="tipo.nombre" width="44" height="44" loading="lazy" decoding="async" />
+            <span class="type-pill__code">{{ tipo.codigo }}</span>
+            <span class="type-pill__name">{{ tipo.nombre }}</span>
+          </router-link>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cifras -->
+    <section ref="statsRef" class="stats-section">
+      <div class="container stats-grid">
+        <div
+          v-for="(stat, i) in stats"
+          :key="stat.label"
+          v-reveal="i * 90"
+          class="stat-card"
+        >
+          <div class="stat-card__value">
+            {{ statValues[i] }}<span>{{ stat.suffix }}</span>
+          </div>
+          <div class="stat-card__label">{{ stat.label }}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Características -->
+    <section id="features" class="section section--light">
       <div class="container">
-        <div class="text-center q-mb-xl">
-          <div class="section-badge q-mb-md">
-            <q-icon name="verified" size="20px" class="q-mr-xs" />
+        <header v-reveal class="section-head">
+          <div class="section-badge">
+            <q-icon name="verified" size="18px" />
             Características
           </div>
-          <h2 class="text-h3 text-weight-bold text-purple-10 q-mb-md">
-            ¿Por qué elegir ElijeHoy?
-          </h2>
-          <p class="text-h6 text-grey-7" style="max-width: 700px; margin: 0 auto;">
-            Herramientas profesionales diseñadas específicamente para ayudarte en tu decisión vocacional
+          <h2 class="section-title">¿Por qué elegir <span class="text-gradient">ElijoHoy</span>?</h2>
+          <p class="section-subtitle">
+            Herramientas diseñadas específicamente para ayudarte en tu decisión vocacional
           </p>
-        </div>
+        </header>
 
-        <div class="row q-col-gutter-lg justify-center">
-          <div class="col-12 col-md-5">
-            <q-card class="feature-card full-height">
-              <q-card-section>
-                <div class="feature-icon bg-amber-1">
-                  <q-icon name="verified_user" size="48px" color="amber-8" />
-                </div>
-                <h3 class="text-h5 text-weight-bold text-purple-10 q-mb-md q-mt-md">
-                  Resultados Confiables
-                </h3>
-                <p class="text-body1 text-grey-7">
-                  Análisis profundo basado en tus intereses genuinos, habilidades naturales y rasgos únicos de personalidad para orientarte con precisión.
-                </p>
-                <q-btn
-                  flat
-                  no-caps
-                  label="Ver Resultados"
-                  to="/auth/registro"
-                  color="amber-8"
-                  class="q-mt-md feature-link"
-                  icon="arrow_forward"
-                />
-              </q-card-section>
-            </q-card>
-          </div>
+        <div class="bento">
+          <article v-reveal class="spot-card bento__main" @mousemove="onSpotlight">
+            <div class="spot-card__icon spot-card__icon--amber">
+              <q-icon name="verified_user" size="30px" />
+            </div>
+            <h3>Resultados Confiables</h3>
+            <p>
+              Análisis profundo basado en tus intereses genuinos, habilidades naturales y rasgos únicos de
+              personalidad para orientarte con precisión.
+            </p>
+            <ul class="bento__list">
+              <li><q-icon name="check_circle" size="20px" /> Tu tipo entre 16 perfiles de personalidad</li>
+              <li><q-icon name="check_circle" size="20px" /> Tus 4 dimensiones con puntaje</li>
+              <li><q-icon name="check_circle" size="20px" /> Fortalezas y carreras sugeridas para ti</li>
+            </ul>
+            <div class="bento__avatars">
+              <img
+                v-for="(tipo, i) in bentoAvatars"
+                :key="tipo.codigo"
+                :src="avatarUrl(tipo.codigo)"
+                :alt="tipo.nombre"
+                :style="{ '--i': i }"
+                width="96"
+                height="96"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <q-btn flat no-caps label="Ver Resultados" icon-right="arrow_forward" to="/auth/registro" class="spot-card__link" />
+          </article>
 
-          <div class="col-12 col-md-5">
-            <q-card class="feature-card full-height">
-              <q-card-section>
-                <div class="feature-icon bg-pink-1">
-                  <q-icon name="support_agent" size="48px" color="pink-7" />
-                </div>
-                <h3 class="text-h5 text-weight-bold text-purple-10 q-mb-md q-mt-md">
-                  Acompañamiento Integral
-                </h3>
-                <p class="text-body1 text-grey-7">
-                  Te brindamos el apoyo necesario para tomar decisiones educativas y profesionales importantes con total confianza y seguridad.
-                </p>
-                <q-btn
-                  flat
-                  no-caps
-                  label="Obtener Apoyo"
-                  to="/auth/login"
-                  color="pink-7"
-                  class="q-mt-md feature-link"
-                  icon="arrow_forward"
-                />
-              </q-card-section>
-            </q-card>
-          </div>
+          <article v-reveal="120" class="spot-card" @mousemove="onSpotlight">
+            <div class="spot-card__icon spot-card__icon--pink">
+              <q-icon name="support_agent" size="30px" />
+            </div>
+            <h3>Acompañamiento Integral</h3>
+            <p>
+              Te brindamos el apoyo necesario para tomar decisiones educativas y profesionales importantes con total
+              confianza y seguridad.
+            </p>
+            <q-btn flat no-caps label="Obtener Apoyo" icon-right="arrow_forward" to="/auth/login" class="spot-card__link" />
+          </article>
+
+          <article v-reveal="200" class="spot-card" @mousemove="onSpotlight">
+            <div class="spot-card__icon spot-card__icon--indigo">
+              <q-icon name="ios_share" size="30px" />
+            </div>
+            <h3>Descarga y Comparte</h3>
+            <p>
+              Guarda tu perfil en PDF o como imagen y compártelo en tus redes con tus amigos y familia.
+            </p>
+            <q-btn flat no-caps label="Hacer el test" icon-right="arrow_forward" to="/test" class="spot-card__link" />
+          </article>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Cómo Funciona -->
-    <div id="how-it-works" class="process-section bg-purple-1 q-py-xl">
+    <!-- Cómo funciona -->
+    <section id="how-it-works" class="section section--tint">
       <div class="container">
-        <div class="text-center q-mb-xl">
-          <div class="section-badge q-mb-md">
-            <q-icon name="auto_awesome" size="20px" class="q-mr-xs" />
+        <header v-reveal class="section-head">
+          <div class="section-badge">
+            <q-icon name="auto_awesome" size="18px" />
             Proceso Simple
           </div>
-          <h2 class="text-h3 text-weight-bold text-purple-10 q-mb-md">
-            Cómo Funciona Nuestro Test Vocacional
-          </h2>
-          <p class="text-h6 text-grey-7" style="max-width: 700px; margin: 0 auto;">
-            En solo 3 pasos descubre tu verdadera vocación
-          </p>
-        </div>
+          <h2 class="section-title">Cómo funciona nuestro test vocacional</h2>
+          <p class="section-subtitle">En solo 3 pasos descubre tu verdadera vocación</p>
+        </header>
 
-        <div class="row q-col-gutter-lg">
-          <div class="col-12 col-md-4">
-            <div class="process-card">
-              <div class="process-number">01</div>
-              <div class="process-icon bg-purple-7">
-                <q-icon name="quiz" size="40px" color="white" />
-              </div>
-              <h3 class="text-h5 text-weight-bold text-purple-10 q-mb-md q-mt-md">
-                Responde Preguntas Estratégicas
-              </h3>
-              <p class="text-body1 text-grey-7">
-                Cuestionario científicamente diseñado para identificar tus fortalezas naturales, intereses genuinos y preferencias profesionales únicas.
-              </p>
+        <div v-reveal class="timeline">
+          <div class="timeline__line"><span /></div>
+          <div
+            v-for="(step, i) in steps"
+            :key="step.title"
+            class="timeline__step"
+            :style="{ '--step-delay': `${300 + i * 250}ms` }"
+          >
+            <div class="timeline__icon" :class="`timeline__icon--${step.tone}`">
+              <q-icon :name="step.icon" size="32px" />
+              <span class="timeline__num">{{ i + 1 }}</span>
             </div>
-          </div>
-
-          <div class="col-12 col-md-4">
-            <div class="process-card">
-              <div class="process-number">02</div>
-              <div class="process-icon bg-amber-8">
-                <q-icon name="analytics" size="40px" color="white" />
-              </div>
-              <h3 class="text-h5 text-weight-bold text-purple-10 q-mb-md q-mt-md">
-                Obtén tu Perfil Vocacional
-              </h3>
-              <p class="text-body1 text-grey-7">
-                Recibe un análisis detallado con recomendaciones personalizadas de carreras, áreas de estudio y opciones profesionales ideales para ti.
-              </p>
-            </div>
-          </div>
-
-          <div class="col-12 col-md-4">
-            <div class="process-card">
-              <div class="process-number">03</div>
-              <div class="process-icon bg-pink-7">
-                <q-icon name="explore" size="40px" color="white" />
-              </div>
-              <h3 class="text-h5 text-weight-bold text-purple-10 q-mb-md q-mt-md">
-                Explora Recursos Exclusivos
-              </h3>
-              <p class="text-body1 text-grey-7">
-                Accede a guías especializadas, información de universidades y herramientas para planificar estratégicamente tu futuro académico.
-              </p>
-            </div>
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.text }}</p>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Beneficios para Estudiantes y Padres -->
-    <div class="benefits-section q-py-xl">
+    <!-- Beneficios -->
+    <section class="section section--light">
       <div class="container">
-        <div class="text-center q-mb-xl">
-          <div class="section-badge q-mb-md">
-            <q-icon name="diamond" size="20px" class="q-mr-xs" />
+        <header v-reveal class="section-head">
+          <div class="section-badge">
+            <q-icon name="diamond" size="18px" />
             Beneficios
           </div>
-          <h2 class="text-h3 text-weight-bold text-purple-10 q-mb-md">
-            Beneficios para Estudiantes y Padres
-          </h2>
-        </div>
+          <h2 class="section-title">Beneficios para estudiantes y padres</h2>
+        </header>
 
-        <div class="row q-col-gutter-lg">
-          <div class="col-12 col-md-4">
-            <q-card class="benefit-card full-height">
-              <q-card-section>
-                <div class="benefit-icon">
-                  <q-icon name="school" size="48px" color="purple-7" />
-                </div>
-                <h3 class="text-h5 text-weight-bold text-purple-10 q-mb-md">
-                  Para Estudiantes
-                </h3>
-                <p class="text-body1 text-grey-7">
-                  Obtén claridad total y seguridad emocional para elegir tu carrera o estudios superiores. Elimina dudas y toma decisiones fundamentadas en tu verdadero potencial.
-                </p>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-12 col-md-4">
-            <q-card class="benefit-card full-height">
-              <q-card-section>
-                <div class="benefit-icon">
-                  <q-icon name="family_restroom" size="48px" color="amber-8" />
-                </div>
-                <h3 class="text-h5 text-weight-bold text-purple-10 q-mb-md">
-                  Para Padres
-                </h3>
-                <p class="text-body1 text-grey-7">
-                  Recibe herramientas valiosas para entender mejor a tus hijos y acompañarlos de manera efectiva en este momento crucial de elección profesional.
-                </p>
-              </q-card-section>
-            </q-card>
-          </div>
-
-          <div class="col-12 col-md-4">
-            <q-card class="benefit-card full-height">
-              <q-card-section>
-                <div class="benefit-icon">
-                  <q-icon name="devices" size="48px" color="pink-7" />
-                </div>
-                <h3 class="text-h5 text-weight-bold text-purple-10 q-mb-md">
-                  Acceso Universal
-                </h3>
-                <p class="text-body1 text-grey-7">
-                  Plataforma completamente accesible desde cualquier dispositivo móvil, tablet o computadora, con resultados inmediatos y descargables al instante.
-                </p>
-              </q-card-section>
-            </q-card>
-          </div>
+        <div class="benefits-grid">
+          <article
+            v-for="(benefit, i) in benefits"
+            :key="benefit.title"
+            v-reveal="i * 120"
+            class="spot-card benefit-card"
+            @mousemove="onSpotlight"
+          >
+            <div class="spot-card__icon" :class="`spot-card__icon--${benefit.tone}`">
+              <q-icon :name="benefit.icon" size="30px" />
+            </div>
+            <h3>{{ benefit.title }}</h3>
+            <p>{{ benefit.text }}</p>
+          </article>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- FAQ Section -->
-    <div id="faq" class="faq-section q-py-xl">
-      <div class="container">
-        <div class="text-center q-mb-xl">
-          <div class="section-badge q-mb-md">
-            <q-icon name="help_outline" size="20px" class="q-mr-xs" />
+    <!-- FAQ -->
+    <section id="faq" class="section section--tint">
+      <div class="container container--narrow">
+        <header v-reveal class="section-head">
+          <div class="section-badge">
+            <q-icon name="help_outline" size="18px" />
             FAQs
           </div>
-          <h2 class="text-h3 text-weight-bold text-purple-10 q-mb-md">
-            Preguntas Frecuentes
-          </h2>
+          <h2 class="section-title">Preguntas frecuentes</h2>
+        </header>
+
+        <div v-reveal class="faq-list">
+          <q-expansion-item
+            v-for="faq in faqs"
+            :key="faq.q"
+            :label="faq.q"
+            group="faq"
+            class="faq-item"
+            header-class="faq-item__header"
+            expand-icon="add"
+            expanded-icon="remove"
+          >
+            <div class="faq-item__body">{{ faq.a }}</div>
+          </q-expansion-item>
         </div>
 
-        <div class="row justify-center">
-          <div class="col-12 col-md-10">
-            <q-list class="faq-list">
-              <q-expansion-item
-                expand-separator
-                icon="help"
-                label="¿Cuánto tiempo dura el test completo?"
-                header-class="text-purple-10 text-weight-bold text-h6"
-                expand-icon-class="text-purple-7"
-              >
-                <q-card flat class="bg-purple-1">
-                  <q-card-section>
-                    <p class="text-body1 text-grey-8">
-                      Aproximadamente 15 minutos para completar todas las secciones. Puedes pausar y continuar cuando gustes sin perder progreso.
-                    </p>
-                  </q-card-section>
-                </q-card>
-              </q-expansion-item>
-
-              <q-expansion-item
-                expand-separator
-                icon="help"
-                label="¿Es realmente completamente gratis?"
-                header-class="text-purple-10 text-weight-bold text-h6"
-                expand-icon-class="text-purple-7"
-              >
-                <q-card flat class="bg-purple-1">
-                  <q-card-section>
-                    <p class="text-body1 text-grey-8">
-                      Sí, el test vocacional básico es totalmente gratuito. Ofrecemos opciones premium con análisis más profundos para quien lo necesite.
-                    </p>
-                  </q-card-section>
-                </q-card>
-              </q-expansion-item>
-
-              <q-expansion-item
-                expand-separator
-                icon="help"
-                label="¿Puedo repetir el test las veces que quiera?"
-                header-class="text-purple-10 text-weight-bold text-h6"
-                expand-icon-class="text-purple-7"
-              >
-                <q-card flat class="bg-purple-1">
-                  <q-card-section>
-                    <p class="text-body1 text-grey-8">
-                      Absolutamente. Puedes realizar el test nuevamente para ver cómo evolucionan tus intereses y preferencias a lo largo del tiempo.
-                    </p>
-                  </q-card-section>
-                </q-card>
-              </q-expansion-item>
-
-              <q-expansion-item
-                expand-separator
-                icon="help"
-                label="¿Qué hago después de recibir mis resultados?"
-                header-class="text-purple-10 text-weight-bold text-h6"
-                expand-icon-class="text-purple-7"
-              >
-                <q-card flat class="bg-purple-1">
-                  <q-card-section>
-                    <p class="text-body1 text-grey-8">
-                      Te proporcionamos asesoría personalizada y recursos adicionales para que puedas seguir avanzando en tu proceso de decisión profesional.
-                    </p>
-                  </q-card-section>
-                </q-card>
-              </q-expansion-item>
-            </q-list>
-          </div>
-        </div>
-      </div>
-
-      <div class="text-center q-mt-xl q-mb-lg">
-        <div class="text-h6 text-grey-7 q-mb-md">¿No encuentras tu respuesta?</div>
-        <div class="q-gutter-sm">
+        <div v-reveal class="faq-help">
+          <span>¿No encuentras tu respuesta?</span>
           <q-btn
             outline
-            color="purple-7"
-            label="Contactar Soporte"
-            to="#contact"
+            no-caps
             icon="contact_support"
-            class="faq-support-btn"
-            no-caps
-          />
-          <q-btn
-            flat
-            color="purple-7"
-            label="Ver Guías Completas"
-            href="https://www.gob.pe/orientacionvocacional"
-            target="_blank"
-            icon="library_books"
-            class="faq-guide-btn"
-            no-caps
+            label="Contactar Soporte"
+            class="faq-help__btn"
+            @click="scrollTo('contact')"
           />
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- CTA Final Section -->
-    <div class="cta-section q-py-xl">
-      <div class="container text-center">
-        <div class="cta-icon q-mb-md">
-          <q-icon name="stars" size="64px" color="amber-8" />
+    <!-- CTA final -->
+    <section class="cta-section">
+      <div class="cta-floaters" aria-hidden="true">
+        <img
+          v-for="(tipo, i) in ctaAvatars"
+          :key="tipo.codigo"
+          :src="avatarUrl(tipo.codigo)"
+          alt=""
+          :class="`cta-floater cta-floater--${i + 1}`"
+          width="110"
+          height="110"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+
+      <div v-reveal class="container cta-content">
+        <div class="cta-icon">
+          <q-icon name="stars" size="44px" />
         </div>
-        <h2 class="text-h3 text-weight-bold text-white q-mb-md">
-          ¡Empieza Hoy!
-        </h2>
-        <h3 class="text-h5 text-white q-mb-md">
-          Construye tu Futuro con ElijeHoy
-        </h3>
-        <p class="text-h6 text-white-7 q-mb-xl" style="max-width: 800px; margin: 0 auto 2rem;">
-          No esperes más para descubrir tu verdadera vocación. Miles de estudiantes ya han transformado su futuro profesional con nuestra plataforma. Es tu momento de brillar y encontrar el camino que realmente te apasiona.
+        <h2>¡Empieza hoy!</h2>
+        <h3>Construye tu futuro con ElijoHoy</h3>
+        <p>
+          No esperes más para descubrir tu verdadera vocación. Es tu momento de brillar y encontrar el camino que
+          realmente te apasiona.
         </p>
 
-        <div class="q-mb-xl">
+        <div class="cta-actions">
           <q-btn
             unelevated
-            size="xl"
-            label="Realizar Test Vocacional Ahora"
+            no-caps
+            size="lg"
             icon="rocket_launch"
+            label="Realizar Test Vocacional Ahora"
             to="/test"
-            class="q-mr-md q-mb-md btn-gradient-yellow"
-            no-caps
+            class="btn-amber"
           />
           <q-btn
-            outline
-            size="xl"
-            color="white"
-            label="Contacto y Soporte"
+            flat
+            no-caps
+            size="lg"
             icon="support_agent"
-            class="q-mb-md btn-outline-white"
-            no-caps
+            label="Contacto y Soporte"
+            class="btn-glass"
+            @click="scrollTo('contact')"
           />
         </div>
 
-        <div class="text-body1 text-white-7 q-mb-md">
-          Síguenos en nuestras redes sociales
-        </div>
-
-        <div class="social-links">
-          <q-btn
-            flat
-            round
-            icon="fab fa-facebook"
-            size="lg"
-            color="white"
-            class="q-mx-sm social-btn"
-          />
-          <q-btn
-            flat
-            round
-            icon="fab fa-instagram"
-            size="lg"
-            color="white"
-            class="q-mx-sm social-btn"
-          />
-          <q-btn
-            flat
-            round
-            icon="fab fa-linkedin"
-            size="lg"
-            color="white"
-            class="q-mx-sm social-btn"
-          />
+        <div class="cta-social">
+          <span>Síguenos en nuestras redes sociales</span>
+          <div>
+            <q-btn flat round :icon="icons.facebook" aria-label="Facebook" class="social-btn" />
+            <q-btn flat round :icon="icons.instagram" aria-label="Instagram" class="social-btn" />
+            <q-btn flat round :icon="icons.linkedin" aria-label="LinkedIn" class="social-btn" />
+          </div>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- Footer -->
-    <div id="contact" class="lp-footer bg-grey-10 text-white">
-      <div class="q-pa-lg">
-        <div class="row q-col-gutter-lg">
-          <div class="col-12 col-md-3">
-            <div class="text-h6 q-mb-sm">
-              <q-icon name="school" size="28px" class="q-mr-sm" />
-              ElijoHoy
-            </div>
-            <p class="text-body2 text-grey-5">
-              La plataforma líder en orientación vocacional. Ayudamos a estudiantes a descubrir su vocación y tomar decisiones informadas sobre su futuro profesional.
-            </p>
-            <div class="q-mt-md">
-              <q-btn
-                flat
-                no-caps
-                label="Política de Privacidad"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-              <br>
-              <q-btn
-                flat
-                no-caps
-                label="Términos de Servicio"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-            </div>
+    <footer id="contact" class="lp-footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="footer-brand">
+            <span class="footer-brand__mark"><q-icon name="school" size="22px" /></span>
+            ElijoHoy
           </div>
-
-          <div class="col-12 col-md-3">
-            <div class="text-h6 q-mb-sm">Plataforma</div>
-            <div class="q-gutter-sm">
-              <q-btn
-                flat
-                no-caps
-                label="Hacer Test Vocacional"
-                to="/test"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-              <br>
-              <q-btn
-                flat
-                no-caps
-                label="Iniciar Sesión"
-                to="/auth/login"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-              <br>
-              <q-btn
-                flat
-                no-caps
-                label="Crear Cuenta"
-                to="/auth/registro"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-              <br>
-              <q-btn
-                flat
-                no-caps
-                label="Dashboard"
-                to="/dashboard"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-            </div>
-          </div>
-
-          <div class="col-12 col-md-3">
-            <div class="text-h6 q-mb-sm">Recursos</div>
-            <div class="q-gutter-sm">
-              <q-btn
-                flat
-                no-caps
-                label="Guía de Carreras"
-                href="https://www.gob.pe/orientacionvocacional"
-                target="_blank"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-              <br>
-              <q-btn
-                flat
-                no-caps
-                label="Test Vocacional Online"
-                href="https://www.ucas.com/ucas-tariff-calculator"
-                target="_blank"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-              <br>
-              <q-btn
-                flat
-                no-caps
-                label="Orientación Profesional"
-                href="https://www.bls.gov/ooh/"
-                target="_blank"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-              <br>
-              <q-btn
-                flat
-                no-caps
-                label="Blog de Carreras"
-                href="https://www.careers.gov/"
-                target="_blank"
-                class="footer-link q-pa-none"
-                color="grey-5"
-                size="sm"
-              />
-            </div>
-          </div>
-
-          <div class="col-12 col-md-3">
-            <div class="text-h6 q-mb-sm">Contacto</div>
-            <p class="text-body2 text-grey-5">
-              <q-icon name="email" size="sm" class="q-mr-xs" />
-              contacto@elijohoy.com
-            </p>
-            <p class="text-body2 text-grey-5">
-              <q-icon name="phone" size="sm" class="q-mr-xs" />
-              +51 999 999 999
-            </p>
-            <p class="text-body2 text-grey-5">
-              <q-icon name="location_on" size="sm" class="q-mr-xs" />
-              Lima, Perú
-            </p>
-            <div class="q-mt-md">
-              <q-btn
-                flat
-                round
-                icon="fab fa-facebook"
-                size="sm"
-                color="grey-5"
-                class="q-mx-xs social-btn"
-              />
-              <q-btn
-                flat
-                round
-                icon="fab fa-twitter"
-                size="sm"
-                color="grey-5"
-                class="q-mx-xs social-btn"
-              />
-              <q-btn
-                flat
-                round
-                icon="fab fa-instagram"
-                size="sm"
-                color="grey-5"
-                class="q-mx-xs social-btn"
-              />
-              <q-btn
-                flat
-                round
-                icon="fab fa-linkedin"
-                size="sm"
-                color="grey-5"
-                class="q-mx-xs social-btn"
-              />
-            </div>
+          <p>
+            La plataforma de orientación vocacional. Ayudamos a estudiantes a descubrir su vocación y tomar decisiones
+            informadas sobre su futuro profesional.
+          </p>
+          <div class="footer-legal">
+            <span>Política de Privacidad</span>
+            <span>Términos de Servicio</span>
           </div>
         </div>
 
-        <q-separator class="q-my-md" dark />
+        <div>
+          <h4>Plataforma</h4>
+          <router-link to="/test">Hacer Test Vocacional</router-link>
+          <router-link to="/auth/login">Iniciar Sesión</router-link>
+          <router-link to="/auth/registro">Crear Cuenta</router-link>
+          <router-link to="/dashboard">Dashboard</router-link>
+        </div>
 
-        <div class="text-center text-caption text-grey-6">
-          &copy; {{ currentYear }} ElijoHoy. Todos los derechos reservados.
+        <div>
+          <h4>Recursos</h4>
+          <a href="#" @click.prevent="scrollTo('features')">Características</a>
+          <a href="#" @click.prevent="scrollTo('how-it-works')">Cómo funciona</a>
+          <a href="#" @click.prevent="scrollTo('faq')">Preguntas frecuentes</a>
+        </div>
+
+        <div>
+          <h4>Contacto</h4>
+          <p class="footer-contact"><q-icon name="email" size="18px" /> andresquilichechavez@gmail.com</p>
+          <p class="footer-contact"><q-icon name="phone" size="18px" /> +51 973791654</p>
+          <p class="footer-contact"><q-icon name="location_on" size="18px" /> Lima, Perú</p>
         </div>
       </div>
-    </div>
+
+      <div class="container footer-bottom">
+        &copy; {{ currentYear }} ElijoHoy. Todos los derechos reservados.
+      </div>
+    </footer>
   </q-page>
 </template>
 
 <script>
-import { defineComponent, ref, computed, onMounted } from 'vue'
+import { defineComponent, ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { fabFacebook, fabInstagram, fabLinkedin } from '@quasar/extras/fontawesome-v6'
+import { getAvatarUrl } from 'src/utils/avatars'
+
+const TIPOS = [
+  { codigo: 'INTJ', nombre: 'El Arquitecto' },
+  { codigo: 'INTP', nombre: 'El Lógico' },
+  { codigo: 'ENTJ', nombre: 'El Comandante' },
+  { codigo: 'ENTP', nombre: 'El Innovador' },
+  { codigo: 'INFJ', nombre: 'El Abogado' },
+  { codigo: 'INFP', nombre: 'El Mediador' },
+  { codigo: 'ENFJ', nombre: 'El Protagonista' },
+  { codigo: 'ENFP', nombre: 'El Activista' },
+  { codigo: 'ISTJ', nombre: 'El Logista' },
+  { codigo: 'ISFJ', nombre: 'El Defensor' },
+  { codigo: 'ESTJ', nombre: 'El Ejecutivo' },
+  { codigo: 'ESFJ', nombre: 'El Cónsul' },
+  { codigo: 'ISTP', nombre: 'El Virtuoso' },
+  { codigo: 'ISFP', nombre: 'El Aventurero' },
+  { codigo: 'ESTP', nombre: 'El Emprendedor' },
+  { codigo: 'ESFP', nombre: 'El Animador' }
+]
+
+const byCode = (...codes) => codes.map(c => TIPOS.find(t => t.codigo === c))
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+// Muestra el elemento con una animación cuando entra en pantalla; el valor es el retraso en ms
+let revealObserver = null
+const reveal = {
+  mounted (el, binding) {
+    el.classList.add('reveal')
+    if (binding.value) el.style.setProperty('--reveal-delay', `${binding.value}ms`)
+
+    if (!('IntersectionObserver' in window) || prefersReducedMotion()) {
+      el.classList.add('is-visible')
+      return
+    }
+    if (!revealObserver) {
+      revealObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible')
+            revealObserver.unobserve(entry.target)
+          }
+        })
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' })
+    }
+    revealObserver.observe(el)
+  },
+  unmounted (el) {
+    revealObserver?.unobserve(el)
+  }
+}
 
 export default defineComponent({
   name: 'LandingPage',
-  setup() {
-    const rating1 = ref(5)
-    const rating2 = ref(5)
-    const rating3 = ref(5)
-
+  directives: { reveal },
+  setup () {
     const currentYear = computed(() => new Date().getFullYear())
+    const avatarUrl = getAvatarUrl
+
+    // Palabra rotativa del título
+    const words = ['vocación', 'talento', 'pasión', 'carrera ideal']
+    const wordIndex = ref(0)
+    const currentWord = computed(() => words[wordIndex.value])
+    let wordTimer = null
+
+    // Partículas del hero (posiciones fijas para que no salten entre renders)
+    const particles = Array.from({ length: 26 }, (_, i) => ({
+      id: i,
+      style: {
+        left: `${(i * 37) % 100}%`,
+        top: `${(i * 53 + 11) % 100}%`,
+        '--size': `${2 + (i % 3)}px`,
+        animationDelay: `${(i % 7) * 0.6}s`,
+        animationDuration: `${3 + (i % 5)}s`
+      }
+    }))
+
+    const heroStack = byCode('ENFP', 'INTJ', 'ESFJ', 'ISTP', 'INFJ')
+    const bentoAvatars = byCode('INTP', 'ENFJ', 'ESTP', 'ISFJ')
+    // ENTJ no se usa sobre fondos oscuros: su imagen trae fondo blanco
+    const ctaAvatars = byCode('ENTP', 'INFP', 'ESTJ', 'ISFP', 'ISTJ', 'ESFP')
+    const icons = { facebook: fabFacebook, instagram: fabInstagram, linkedin: fabLinkedin }
+
+    // Dos filas del carrusel; cada lista va duplicada para que el bucle no tenga cortes
+    const firstHalf = TIPOS.slice(0, 8)
+    const secondHalf = TIPOS.slice(8)
+    const marqueeRows = [
+      [...firstHalf, ...firstHalf],
+      [...secondHalf, ...secondHalf]
+    ]
+
+    const steps = [
+      {
+        icon: 'quiz',
+        tone: 'indigo',
+        title: 'Responde preguntas estratégicas',
+        text: 'Cuestionario diseñado para identificar tus fortalezas naturales, intereses genuinos y preferencias profesionales.'
+      },
+      {
+        icon: 'analytics',
+        tone: 'amber',
+        title: 'Obtén tu perfil vocacional',
+        text: 'Recibe un análisis detallado con recomendaciones de carreras, áreas de estudio y opciones profesionales para ti.'
+      },
+      {
+        icon: 'explore',
+        tone: 'pink',
+        title: 'Explora y comparte',
+        text: 'Descarga tu perfil, compártelo y úsalo para planificar estratégicamente tu futuro académico.'
+      }
+    ]
+
+    const benefits = [
+      {
+        icon: 'school',
+        tone: 'indigo',
+        title: 'Para Estudiantes',
+        text: 'Obtén claridad y seguridad para elegir tu carrera o estudios superiores. Elimina dudas y toma decisiones fundamentadas en tu verdadero potencial.'
+      },
+      {
+        icon: 'family_restroom',
+        tone: 'amber',
+        title: 'Para Padres',
+        text: 'Recibe herramientas valiosas para entender mejor a tus hijos y acompañarlos de manera efectiva en este momento crucial.'
+      },
+      {
+        icon: 'devices',
+        tone: 'pink',
+        title: 'Acceso Universal',
+        text: 'Accesible desde cualquier móvil, tablet o computadora, con resultados inmediatos y descargables al instante.'
+      }
+    ]
+
+    const faqs = [
+      {
+        q: '¿Cuánto tiempo dura el test completo?',
+        a: 'Aproximadamente 15 minutos para completar todas las secciones. Puedes pausar y continuar cuando gustes sin perder progreso.'
+      },
+      {
+        q: '¿Es realmente completamente gratis?',
+        a: 'Sí, el test vocacional básico es totalmente gratuito. Ofrecemos opciones premium con análisis más profundos para quien lo necesite.'
+      },
+      {
+        q: '¿Puedo repetir el test las veces que quiera?',
+        a: 'Absolutamente. Puedes realizar el test nuevamente para ver cómo evolucionan tus intereses y preferencias a lo largo del tiempo.'
+      },
+      {
+        q: '¿Qué hago después de recibir mis resultados?',
+        a: 'Te proporcionamos asesoría personalizada y recursos adicionales para que puedas seguir avanzando en tu proceso de decisión profesional.'
+      }
+    ]
+
+    // Cifras con contador animado al entrar en pantalla
+    const stats = [
+      { value: 32, suffix: '', label: 'Preguntas' },
+      { value: 16, suffix: '', label: 'Perfiles de personalidad' },
+      { value: 15, suffix: ' min', label: 'Duración aproximada' },
+      { value: 100, suffix: '%', label: 'Gratis' }
+    ]
+    const statValues = ref(stats.map(() => 0))
+    const statsRef = ref(null)
+    let statsObserver = null
+    let statsFrame = null
+
+    const animateStats = () => {
+      if (prefersReducedMotion()) {
+        statValues.value = stats.map(s => s.value)
+        return
+      }
+      const duration = 1400
+      const start = performance.now()
+      const tick = (now) => {
+        const t = Math.min((now - start) / duration, 1)
+        const eased = 1 - Math.pow(1 - t, 3)
+        statValues.value = stats.map(s => Math.round(s.value * eased))
+        if (t < 1) statsFrame = requestAnimationFrame(tick)
+      }
+      statsFrame = requestAnimationFrame(tick)
+    }
+
+    // Parallax del hero según la posición del mouse
+    const heroRef = ref(null)
+    const onHeroMove = (e) => {
+      const el = heroRef.value
+      if (!el || prefersReducedMotion()) return
+      const rect = el.getBoundingClientRect()
+      el.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width - 0.5).toFixed(3))
+      el.style.setProperty('--my', ((e.clientY - rect.top) / rect.height - 0.5).toFixed(3))
+    }
+    const onHeroLeave = () => {
+      heroRef.value?.style.setProperty('--mx', 0)
+      heroRef.value?.style.setProperty('--my', 0)
+    }
+
+    // Brillo que sigue al cursor en las tarjetas
+    const onSpotlight = (e) => {
+      const card = e.currentTarget
+      const rect = card.getBoundingClientRect()
+      card.style.setProperty('--x', `${e.clientX - rect.left}px`)
+      card.style.setProperty('--y', `${e.clientY - rect.top}px`)
+    }
+
+    const scrollTo = (id) => {
+      const el = document.getElementById(id)
+      if (!el) return
+      const top = el.getBoundingClientRect().top + window.scrollY - 64
+      window.scrollTo({ top, behavior: 'smooth' })
+    }
 
     onMounted(() => {
       // Limpiar TODOS los datos al entrar al landing (test, autenticación, etc.)
-      console.log('Landing: Limpiando todos los datos del test y sesión')
-
-      // Datos de test
       localStorage.removeItem('testSesion')
       localStorage.removeItem('testRespuestas')
       localStorage.removeItem('tokenAnonimo')
 
-      // Datos de autenticación
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
       localStorage.removeItem('user')
@@ -660,14 +663,52 @@ export default defineComponent({
       localStorage.removeItem('user_token')
       localStorage.removeItem('idUsuario')
 
-      console.log('Landing: Limpieza completada')
+      if (!prefersReducedMotion()) {
+        wordTimer = setInterval(() => {
+          wordIndex.value = (wordIndex.value + 1) % words.length
+        }, 2600)
+      }
+
+      if ('IntersectionObserver' in window && statsRef.value) {
+        statsObserver = new IntersectionObserver(([entry]) => {
+          if (entry.isIntersecting) {
+            animateStats()
+            statsObserver.disconnect()
+          }
+        }, { threshold: 0.4 })
+        statsObserver.observe(statsRef.value)
+      } else {
+        statValues.value = stats.map(s => s.value)
+      }
+    })
+
+    onBeforeUnmount(() => {
+      clearInterval(wordTimer)
+      statsObserver?.disconnect()
+      if (statsFrame) cancelAnimationFrame(statsFrame)
     })
 
     return {
-      rating1,
-      rating2,
-      rating3,
-      currentYear
+      currentYear,
+      avatarUrl,
+      currentWord,
+      particles,
+      heroStack,
+      bentoAvatars,
+      ctaAvatars,
+      icons,
+      marqueeRows,
+      steps,
+      benefits,
+      faqs,
+      stats,
+      statValues,
+      statsRef,
+      heroRef,
+      onHeroMove,
+      onHeroLeave,
+      onSpotlight,
+      scrollTo
     }
   }
 })
@@ -675,695 +716,1300 @@ export default defineComponent({
 
 <style scoped>
 .landing-page {
+  --indigo: #6366F1;
+  --indigo-600: #4F46E5;
+  --indigo-800: #3730A3;
+  --indigo-950: #1E1B4B;
+  --amber: #F59E0B;
+  --amber-light: #FDB813;
+  --amber-dark: #D97706;
+  --pink: #EC4899;
+  --ink: #1E1B4B;
+  --muted: #64748B;
+
   min-height: 100vh;
-}
-
-.lp-footer {
-  width: 100%;
-}
-
-/* Hero Section */
-.hero-section {
-  height: calc(100vh - 3.5rem);
-  min-height: 500px;
-  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 25%, #3730A3 50%, #1E1B4B 100%);
-  display: flex;
-  align-items: center;
-  padding: clamp(1rem, 2vh, 2rem) 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.hero-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: clamp(18.75rem, 45vw, 37.5rem);
-  height: clamp(18.75rem, 45vw, 37.5rem);
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
-  border-radius: 50%;
-  animation: floatOrb 6s ease-in-out infinite;
-}
-
-.hero-section::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: clamp(12.5rem, 30vw, 25rem);
-  height: clamp(12.5rem, 30vw, 25rem);
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%);
-  border-radius: 50%;
-  animation: floatOrb 8s ease-in-out infinite reverse;
-}
-
-@keyframes floatOrb {
-  0%, 100% {
-    transform: scale(1) translateY(0px);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(1.1) translateY(-20px);
-    opacity: 0.8;
-  }
+  overflow-x: hidden;
+  color: var(--ink);
 }
 
 .container {
-  max-width: clamp(56.25rem, 90vw, 75rem);
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 clamp(0.75rem, 2vw, 1.25rem);
+  padding: 0 clamp(16px, 4vw, 32px);
+}
+
+.container--narrow {
+  max-width: 860px;
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, var(--indigo) 0%, var(--pink) 50%, var(--amber) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 6s linear infinite;
+}
+
+/* ------------------------------------------------------------------ Hero */
+.hero-section {
+  --mx: 0;
+  --my: 0;
+
+  position: relative;
+  min-height: calc(100vh - 3.5rem);
+  display: flex;
+  align-items: center;
+  padding: clamp(48px, 8vh, 96px) 0 clamp(72px, 10vh, 120px);
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 25%, #3730A3 50%, #1E1B4B 100%);
+  background-size: 180% 180%;
+  animation: gradientShift 16s ease-in-out infinite;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  will-change: transform;
+}
+
+.blob--indigo {
+  width: 520px;
+  height: 520px;
+  top: -180px;
+  left: -140px;
+  background: #818CF8;
+  animation: blobMove 18s ease-in-out infinite;
+}
+
+.blob--pink {
+  width: 420px;
+  height: 420px;
+  bottom: -160px;
+  right: 10%;
+  background: var(--pink);
+  opacity: 0.35;
+  animation: blobMove 22s ease-in-out infinite reverse;
+}
+
+.blob--amber {
+  width: 360px;
+  height: 360px;
+  top: 10%;
+  right: -120px;
+  background: var(--amber);
+  opacity: 0.3;
+  animation: blobMove 20s ease-in-out infinite 2s;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 50% 40%, #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 40%, #000 0%, transparent 70%);
+  transform: translate3d(calc(var(--mx) * 18px), calc(var(--my) * 18px), 0);
+  transition: transform 0.4s ease-out;
+}
+
+.particle {
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+.hero-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 56px);
 }
 
 .hero-badge {
   display: inline-flex;
   align-items: center;
-  padding: clamp(1rem, 1.2vw, 0.625rem) clamp(0.875rem, 2vw, 1.25rem);
-  background: rgba(245, 158, 11, 0.15);
-  backdrop-filter: blur(0.625rem);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: clamp(1.5rem, 4vw, 3.125rem);
-  color: #F59E0B;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--amber-light);
+  font-size: 0.85rem;
   font-weight: 600;
-  font-size: clamp(0.75rem, 1.2vw, 0.875rem);
-  letter-spacing: 0.025em;
-  box-shadow: 0 0.25rem 1rem rgba(245, 158, 11, 0.1);
-  animation: fadeInScale 0.8s ease-out;
+  backdrop-filter: blur(10px);
+  animation: fadeInUp 0.8s ease-out both;
+}
+
+.hero-badge__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--amber-light);
+  box-shadow: 0 0 0 0 rgba(253, 184, 19, 0.7);
+  animation: ping 2s ease-out infinite;
 }
 
 .hero-title {
-  color: white;
-  font-size: clamp(1.75rem, 5vw, 3.5rem);
+  margin: 22px 0 18px;
+  font-size: clamp(2.1rem, 4.4vw, 3.6rem);
   font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-  margin-bottom: clamp(1rem, 2vw, 1.5rem);
-  animation: fadeInUp 1s ease-out 0.2s both;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  animation: fadeInUp 0.9s ease-out 0.1s both;
+}
+
+.hero-title__rotator {
+  display: block;
+  min-height: 1.15em;
+}
+
+.hero-title__word {
+  display: inline-block;
+  background: linear-gradient(90deg, #FDE68A 0%, var(--amber-light) 45%, #F472B6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: wordIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .hero-subtitle {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: clamp(1rem, 2vw, 1.25rem);
-  font-weight: 400;
-  line-height: 1.6;
-  max-width: clamp(18.75rem, 90vw, 37.5rem);
-  animation: fadeInUp 1s ease-out 0.4s both;
+  max-width: 560px;
+  margin: 0 0 32px;
+  font-size: clamp(1rem, 1.6vw, 1.18rem);
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.85);
+  animation: fadeInUp 0.9s ease-out 0.25s both;
 }
 
-.btn-gradient-purple {
-  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
-  color: white;
-  font-weight: 600;
-  border-radius: clamp(0.5rem, 1.5vw, 0.75rem);
-  padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 4vw, 2rem);
-  box-shadow: 0 0.5rem 1.5rem rgba(99, 102, 241, 0.4);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  animation: fadeInUp 0.9s ease-out 0.4s both;
+}
+
+.btn-primary-glow,
+.btn-amber {
   position: relative;
   overflow: hidden;
-  z-index: 10;
+  border-radius: 14px;
+  padding: 6px 22px;
+  font-weight: 700;
+  color: var(--indigo-950);
+  background: linear-gradient(135deg, #FBBF24 0%, var(--amber) 50%, var(--amber-dark) 100%);
+  box-shadow: 0 12px 32px -8px rgba(245, 158, 11, 0.7);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-.btn-gradient-purple::before {
+.btn-primary-glow::after,
+.btn-amber::after {
   content: '';
   position: absolute;
   top: 0;
-  left: -100%;
-  width: 100%;
+  left: -60%;
+  width: 40%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.6s;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  animation: shine 3.2s ease-in-out infinite;
 }
 
-.btn-gradient-purple:hover {
-  transform: translateY(-0.1875rem);
-  box-shadow: 0 0.75rem 2rem rgba(99, 102, 241, 0.6);
+.btn-primary-glow:hover,
+.btn-amber:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -8px rgba(245, 158, 11, 0.85);
 }
 
-.btn-gradient-purple:hover::before {
-  left: 100%;
-}
-
-.btn-outline {
-  border: 0.125rem solid rgba(255, 255, 255, 0.8);
-  color: white;
+.btn-glass {
+  border-radius: 14px;
+  padding: 6px 22px;
   font-weight: 600;
-  border-radius: clamp(0.5rem, 1.5vw, 0.75rem);
-  padding: clamp(0.625rem, 1.8vw, 0.875rem) clamp(1.5rem, 4vw, 2rem);
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(0.625rem);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(10px);
+  transition: background 0.25s ease, transform 0.25s ease;
 }
 
-.btn-outline:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: white;
-  transform: translateY(-0.125rem);
-  box-shadow: 0 0.5rem 1.5rem rgba(255, 255, 255, 0.1);
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.16);
+  transform: translateY(-3px);
 }
 
-.btn-learn-more {
-  border: 0.125rem solid rgba(99, 102, 241, 0.3);
-  color: #6366F1;
-  font-weight: 600;
-  border-radius: clamp(0.5rem, 1.5vw, 0.75rem);
-  padding: clamp(0.625rem, 1.5vw, 0.75rem) clamp(1.25rem, 3vw, 1.5rem);
-  background: rgba(99, 102, 241, 0.05);
-  backdrop-filter: blur(0.625rem);
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+.hero-proof {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 36px;
+  animation: fadeInUp 0.9s ease-out 0.55s both;
+}
+
+.avatar-stack {
+  display: flex;
+}
+
+.avatar-stack img {
+  width: 44px;
+  height: 44px;
+  margin-left: -12px;
+  padding: 3px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  transition: transform 0.25s ease;
+}
+
+.avatar-stack img:first-child {
+  margin-left: 0;
+}
+
+.avatar-stack img:hover {
+  transform: translateY(-6px) scale(1.08);
+  z-index: 1;
+}
+
+.hero-proof__text {
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.hero-proof__text span {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.hero-visual {
   position: relative;
-  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate3d(calc(var(--mx) * -26px), calc(var(--my) * -20px), 0);
+  transition: transform 0.4s ease-out;
+  animation: fadeInScale 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
-.btn-learn-more:hover {
-  background: rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.5);
-  transform: translateY(-0.125rem);
-  box-shadow: 0 0.5rem 1.5rem rgba(99, 102, 241, 0.2);
-}
-
-.feature-link {
-  font-weight: 600;
-  border-radius: clamp(0.4rem, 1vw, 0.5rem);
-  padding: clamp(0.4rem, 1vw, 0.5rem) clamp(0.75rem, 2vw, 1rem);
-  transition: all 0.3s ease;
-  opacity: 0.8;
-}
-
-.feature-link:hover {
-  opacity: 1;
-  transform: translateX(0.25rem);
-}
-
-.btn-more-testimonials {
-  border: 0.125rem solid rgba(99, 102, 241, 0.3);
-  font-weight: 600;
-  border-radius: clamp(0.75rem, 2vw, 1rem);
-  padding: clamp(0.625rem, 1.8vw, 0.875rem) clamp(1.5rem, 4vw, 2rem);
-  background: rgba(99, 102, 241, 0.05);
-  backdrop-filter: blur(0.625rem);
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.btn-more-testimonials:hover {
-  background: rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.5);
-  transform: translateY(-0.25rem);
-  box-shadow: 0 0.75rem 2rem rgba(99, 102, 241, 0.3);
-}
-
-.faq-support-btn,
-.faq-guide-btn {
-  border-radius: clamp(0.5rem, 1.5vw, 0.75rem);
-  font-weight: 600;
-  padding: clamp(0.625rem, 1.5vw, 0.75rem) clamp(1.25rem, 3vw, 1.5rem);
-  margin: 0 clamp(0.4rem, 1vw, 0.5rem);
-  transition: all 0.3s ease;
-}
-
-.faq-support-btn:hover,
-.faq-guide-btn:hover {
-  transform: translateY(-0.125rem);
-  box-shadow: 0 0.5rem 1.5rem rgba(99, 102, 241, 0.2);
-}
-
-.footer-link {
-  text-align: left;
-  justify-content: flex-start;
-  min-height: auto;
-  padding: clamp(0.2rem, 0.5vw, 0.25rem) 0;
-  font-size: clamp(0.775rem, 1.1vw, 0.875rem);
-  transition: all 0.3s ease;
-}
-
-.footer-link:hover {
-  color: #6366F1 !important;
-  transform: translateX(0.25rem);
-}
-
-.social-btn {
-  transition: all 0.3s ease;
-}
-
-.social-btn:hover {
-  transform: translateY(-0.125rem);
-  color: #6366F1 !important;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-number {
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  color: #FDB813;
-  line-height: 1;
-}
-
-.stat-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: clamp(0.8rem, 1.2vw, 0.9rem);
-  margin-top: clamp(0.2rem, 0.5vw, 0.25rem);
-}
-
-/* Hero Image */
-.hero-image-wrapper {
-  position: relative;
-  height: clamp(250px, 35vh, 450px);
-  animation: fadeInRight 1.2s ease-out 0.4s both;
-}
-
-.floating-card {
+.hero-visual__halo {
   position: absolute;
+  width: 78%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(253, 184, 19, 0.35) 0%, transparent 60%),
+    conic-gradient(from 0deg, rgba(99, 102, 241, 0), rgba(236, 72, 153, 0.35), rgba(99, 102, 241, 0));
+  filter: blur(30px);
+  animation: spin 14s linear infinite;
+}
+
+.hero-visual__img {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  filter: drop-shadow(0 30px 50px rgba(15, 12, 50, 0.45));
+  animation: float 5s ease-in-out infinite;
+}
+
+.float-chip {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(1.25rem);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: clamp(0.75rem, 2vw, 1.25rem);
-  padding: clamp(1rem, 2.5vw, 1.5rem);
-  box-shadow: 0 0.75rem 2.5rem rgba(15, 23, 42, 0.15);
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 18px 40px -12px rgba(15, 12, 50, 0.5);
+  transform: translate3d(calc(var(--mx) * 22px), calc(var(--my) * 22px), 0);
+  transition: transform 0.4s ease-out;
+}
+
+.float-chip .q-icon {
+  color: var(--amber);
+}
+
+.float-chip img {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #EEF2FF;
+}
+
+.float-chip strong {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--indigo);
+}
+
+.float-chip span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.float-chip--top {
+  top: 6%;
+  left: 2%;
+  animation: chipIn 0.7s ease-out 0.9s both, bob 4.5s ease-in-out 1.6s infinite;
+}
+
+.float-chip--left {
+  bottom: 18%;
+  left: -2%;
+  animation: chipIn 0.7s ease-out 1.1s both, bob 5s ease-in-out 1.8s infinite reverse;
+}
+
+.float-chip--bottom {
+  bottom: 4%;
+  right: 4%;
+  animation: chipIn 0.7s ease-out 1.3s both, bob 5.5s ease-in-out 2s infinite;
+}
+
+.scroll-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 2;
+  transform: translateX(-50%);
+  padding: 6px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.scroll-cue__mouse {
+  display: block;
+  width: 26px;
+  height: 42px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  position: relative;
+}
+
+.scroll-cue__mouse span {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 4px;
+  height: 8px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #fff;
+  animation: scrollDot 1.8s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------------ Marquee */
+.marquee-section {
+  position: relative;
+  padding: 28px 0;
+  background: var(--indigo-950);
+  overflow: hidden;
+}
+
+.marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee + .marquee {
+  margin-top: 14px;
+}
+
+.marquee__track {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+
+.marquee--reverse .marquee__track {
+  animation-direction: reverse;
+  animation-duration: 46s;
+}
+
+.marquee:hover .marquee__track {
+  animation-play-state: paused;
+}
+
+.type-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 8px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+
+.type-pill:hover {
+  background: rgba(99, 102, 241, 0.3);
+  border-color: rgba(165, 180, 252, 0.6);
+  transform: translateY(-3px);
+}
+
+.type-pill img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 3px;
+}
+
+.type-pill__code {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--amber-light);
+}
+
+.type-pill__name {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ------------------------------------------------------------------ Stats */
+.stats-section {
+  position: relative;
+  z-index: 2;
+  margin-top: -1px;
+  padding: 48px 0;
+  background: linear-gradient(180deg, #F8FAFC 0%, #fff 100%);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.stat-card {
+  padding: 24px 16px;
+  border-radius: 20px;
   text-align: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: floatCard 4s ease-in-out infinite;
+  background: #fff;
+  border: 1px solid #E0E7FF;
+  box-shadow: 0 10px 30px -18px rgba(79, 70, 229, 0.45);
 }
 
-.floating-card:hover {
-  transform: translateY(-0.5rem) scale(1.05);
-  box-shadow: 0 1.25rem 3.75rem rgba(15, 23, 42, 0.25);
+.stat-card__value {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--indigo) 0%, var(--indigo-800) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.card-1 {
-  top: 10%;
-  left: 10%;
-  animation-delay: 0s;
+.stat-card__value span {
+  font-size: 0.5em;
+  margin-left: 2px;
 }
 
-.card-2 {
-  top: 50%;
-  right: 10%;
-  animation-delay: 1.5s;
+.stat-card__label {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
-.card-3 {
-  bottom: 10%;
-  left: 30%;
-  animation-delay: 3s;
+/* ------------------------------------------------------------------ Secciones */
+.section {
+  padding: clamp(64px, 10vh, 112px) 0;
 }
 
-@keyframes floatCard {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-0.9375rem) rotate(1deg);
-  }
+.section--light {
+  background: #fff;
 }
 
-/* Sections */
-.features-section,
-.benefits-section,
-.faq-section {
-  padding: clamp(2.5rem, 6vh, 5rem) 0;
-  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+.section--tint {
+  background: linear-gradient(180deg, #EEF2FF 0%, #F5F3FF 100%);
 }
 
-.process-section,
-.testimonials-section {
-  padding: clamp(2.5rem, 6vh, 5rem) 0;
-  background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
+.section-head {
+  max-width: 720px;
+  margin: 0 auto clamp(36px, 6vh, 56px);
+  text-align: center;
 }
 
 .section-badge {
   display: inline-flex;
   align-items: center;
-  padding: clamp(0.4rem, 1vw, 0.5rem) clamp(0.75rem, 2vw, 1rem);
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
   background: rgba(99, 102, 241, 0.1);
-  backdrop-filter: blur(0.625rem);
   border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: clamp(1.5rem, 4vw, 3.125rem);
-  color: #6366F1;
-  font-weight: 600;
-  font-size: clamp(0.725rem, 1.1vw, 0.8125rem);
-  letter-spacing: 0.025em;
-  box-shadow: 0 0.25rem 1rem rgba(99, 102, 241, 0.1);
-  animation: fadeInScale 0.8s ease-out;
+  color: var(--indigo);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
-/* Feature Cards */
-.feature-card {
-  border-radius: clamp(0.75rem, 2vw, 1rem);
-  border: 0.125rem solid #F3F4F6;
-  transition: all 0.3s ease;
+.section-title {
+  margin: 16px 0 12px;
+  font-size: clamp(1.8rem, 3.6vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+
+.section-subtitle {
+  margin: 0;
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Tarjetas con brillo que sigue al cursor */
+.spot-card {
+  --x: 50%;
+  --y: 50%;
+
+  position: relative;
+  overflow: hidden;
+  padding: 28px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 10px 30px -20px rgba(30, 27, 75, 0.35);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.spot-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(420px circle at var(--x) var(--y), rgba(99, 102, 241, 0.12), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.spot-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 24px 50px -24px rgba(79, 70, 229, 0.45);
+}
+
+.spot-card:hover::before {
+  opacity: 1;
+}
+
+.spot-card h3 {
+  margin: 18px 0 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.spot-card p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.spot-card__icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.spot-card:hover .spot-card__icon {
+  transform: rotate(-8deg) scale(1.08);
+}
+
+.spot-card__icon--amber {
+  background: #FEF3C7;
+  color: var(--amber-dark);
+}
+
+.spot-card__icon--pink {
+  background: #FCE7F3;
+  color: #DB2777;
+}
+
+.spot-card__icon--indigo {
+  background: #E0E7FF;
+  color: var(--indigo-600);
+}
+
+.spot-card__link {
+  margin: 18px 0 0 -10px;
+  color: var(--indigo);
+  font-weight: 700;
+}
+
+.spot-card__link :deep(.q-icon) {
+  transition: transform 0.25s ease;
+}
+
+.spot-card__link:hover :deep(.q-icon) {
+  transform: translateX(4px);
+}
+
+.bento {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 20px;
+}
+
+.bento__main {
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, #fff 0%, #EEF2FF 100%);
+}
+
+.bento__main .spot-card__link {
+  align-self: flex-start;
+}
+
+.bento__list {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bento__list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.bento__list .q-icon {
+  color: #10B981;
+}
+
+.bento__avatars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.bento__avatars img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  padding: 8px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid #E0E7FF;
+  animation: bob 4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.4s);
+}
+
+/* Timeline */
+.timeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.timeline__line {
+  position: absolute;
+  top: 40px;
+  left: 16.66%;
+  right: 16.66%;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(99, 102, 241, 0.15);
   overflow: hidden;
 }
 
-.feature-card:hover {
-  border-color: #7C3AED;
-  transform: translateY(-0.5rem);
-  box-shadow: 0 0.75rem 2.5rem rgba(124, 58, 237, 0.15);
-}
-
-.feature-icon {
-  width: clamp(3.5rem, 8vw, 5rem);
-  height: clamp(3.5rem, 8vw, 5rem);
-  border-radius: clamp(0.75rem, 2vw, 1rem);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Process Cards */
-.process-card {
-  background: white;
-  border-radius: clamp(0.75rem, 2.5vw, 1.25rem);
-  padding: clamp(1.5rem, 4vw, 2rem);
-  text-align: center;
-  position: relative;
-  box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.process-card:hover {
-  transform: translateY(-0.5rem);
-  box-shadow: 0 0.5rem 1.875rem rgba(0, 0, 0, 0.12);
-}
-
-.process-number {
-  position: absolute;
-  top: clamp(1rem, 2.5vw, 1.25rem);
-  right: clamp(1rem, 2.5vw, 1.25rem);
-  font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 700;
-  color: rgba(124, 58, 237, 0.1);
-  line-height: 1;
-}
-
-.process-icon {
-  width: clamp(3.5rem, 8vw, 5rem);
-  height: clamp(3.5rem, 8vw, 5rem);
-  border-radius: clamp(0.75rem, 2vw, 1rem);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-/* Benefit Cards */
-.benefit-card {
-  border-radius: clamp(0.75rem, 2vw, 1rem);
-  border: 0.125rem solid #F3F4F6;
-  transition: all 0.3s ease;
-}
-
-.benefit-card:hover {
-  border-color: #FDB813;
-  transform: translateY(-0.5rem);
-  box-shadow: 0 0.75rem 2.5rem rgba(253, 184, 19, 0.15);
-}
-
-.benefit-icon {
-  width: clamp(3.5rem, 8vw, 5rem);
-  height: clamp(3.5rem, 8vw, 5rem);
-  border-radius: clamp(0.75rem, 2vw, 1rem);
-  background: rgba(124, 58, 237, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: clamp(1rem, 2.5vw, 1.25rem);
-}
-
-/* Testimonial Cards */
-.testimonial-card {
-  background: white;
-  border-radius: clamp(0.75rem, 2vw, 1rem);
-  box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
+.timeline__line span {
+  display: block;
   height: 100%;
+  background: linear-gradient(90deg, var(--indigo), var(--amber), var(--pink));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1.4s cubic-bezier(0.65, 0, 0.35, 1) 0.3s;
 }
 
-.testimonial-card:hover {
-  transform: translateY(-0.5rem);
-  box-shadow: 0 0.5rem 1.875rem rgba(0, 0, 0, 0.12);
+.timeline.is-visible .timeline__line span {
+  transform: scaleX(1);
+}
+
+.timeline__step {
+  position: relative;
+  text-align: center;
+  padding: 0 8px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--step-delay);
+}
+
+.timeline.is-visible .timeline__step {
+  opacity: 1;
+  transform: none;
+}
+
+.timeline__icon {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 16px 34px -14px currentColor;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.timeline__step:hover .timeline__icon {
+  transform: translateY(-6px) rotate(-6deg);
+}
+
+.timeline__icon--indigo {
+  background: linear-gradient(135deg, #818CF8, var(--indigo-600));
+}
+
+.timeline__icon--amber {
+  background: linear-gradient(135deg, #FBBF24, var(--amber-dark));
+}
+
+.timeline__icon--pink {
+  background: linear-gradient(135deg, #F472B6, #DB2777);
+}
+
+.timeline__num {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--indigo-950);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #EEF2FF;
+}
+
+.timeline__step h3 {
+  margin: 22px 0 10px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.timeline__step p {
+  margin: 0;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+/* Beneficios */
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
 }
 
 /* FAQ */
 .faq-list {
-  border-radius: clamp(0.5rem, 1.5vw, 0.75rem);
+  display: grid;
+  gap: 12px;
+}
+
+.faq-item {
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid #E0E7FF;
   overflow: hidden;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
-.faq-list :deep(.q-item) {
-  padding: clamp(1rem, 2.5vw, 1.25rem);
-  border-bottom: 1px solid #F3F4F6;
+.faq-item:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 14px 30px -20px rgba(79, 70, 229, 0.5);
 }
 
-/* CTA Section */
+.faq-item :deep(.faq-item__header) {
+  padding: 18px 22px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.faq-item :deep(.q-expansion-item__toggle-icon) {
+  color: var(--indigo);
+}
+
+.faq-item__body {
+  padding: 0 22px 20px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.faq-help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 36px;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.faq-help__btn {
+  border-radius: 12px;
+  color: var(--indigo);
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------------ CTA */
 .cta-section {
-  padding: clamp(3rem, 8vh, 6rem) 0;
-  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 25%, #3730A3 50%, #1E1B4B 100%);
   position: relative;
   overflow: hidden;
+  padding: clamp(80px, 12vh, 128px) 0;
+  color: #fff;
+  text-align: center;
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 25%, #3730A3 50%, #1E1B4B 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 14s ease-in-out infinite;
 }
 
-.cta-section::before {
-  content: '';
+.cta-floaters {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.02)"/><circle cx="90" cy="20" r="0.5" fill="rgba(255,255,255,0.02)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  opacity: 0.5;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cta-floater {
+  position: absolute;
+  width: clamp(64px, 8vw, 110px);
+  height: auto;
+  opacity: 0.9;
+  filter: drop-shadow(0 16px 24px rgba(15, 12, 50, 0.45));
+  animation: float 6s ease-in-out infinite;
+}
+
+.cta-floater--1 { top: 12%; left: 6%; animation-delay: 0s; }
+.cta-floater--2 { top: 58%; left: 3%; animation-delay: 1.2s; }
+.cta-floater--3 { bottom: 8%; left: 18%; animation-delay: 2.1s; }
+.cta-floater--4 { top: 10%; right: 7%; animation-delay: 0.6s; }
+.cta-floater--5 { top: 55%; right: 3%; animation-delay: 1.8s; }
+.cta-floater--6 { bottom: 6%; right: 19%; animation-delay: 2.6s; }
+
+.cta-content {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
 }
 
 .cta-icon {
-  animation: bounceIn 1s ease-out, pulse 3s ease-in-out infinite 1s;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--amber-light);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: pulseRing 2.6s ease-out infinite;
 }
 
-@keyframes bounceIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+.cta-content h2 {
+  margin: 0;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
-.text-white-7 {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.btn-gradient-yellow {
-  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-  color: #1E1B4B;
-  font-weight: 700;
-  border-radius: 12px;
-  padding: 18px 40px;
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-gradient-yellow::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.6s;
-}
-
-.btn-gradient-yellow:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(245, 158, 11, 0.6);
-}
-
-.btn-gradient-yellow:hover::before {
-  left: 100%;
-}
-
-.btn-outline-white {
-  border: 2px solid rgba(255, 255, 255, 0.8);
-  color: white;
+.cta-content h3 {
+  margin: 10px 0 18px;
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
   font-weight: 600;
-  border-radius: 12px;
-  padding: 16px 40px;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--amber-light);
 }
 
-.btn-outline-white:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+.cta-content p {
+  margin: 0 auto 34px;
+  max-width: 640px;
+  font-size: 1.08rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
 }
 
-.social-links {
+.cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.cta-social {
+  margin-top: 40px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+}
+
+.cta-social > div {
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .social-btn {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 50%;
-  padding: 12px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  transition: transform 0.25s ease, background 0.25s ease;
 }
 
 .social-btn:hover {
-  transform: scale(1.1) translateY(-2px);
-  background: rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.1);
+  transform: translateY(-3px) scale(1.08);
+  background: rgba(255, 255, 255, 0.18);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .hero-section {
-    min-height: auto;
-    padding: 60px 0 40px;
-  }
-
-  .hero-title {
-    font-size: 2rem;
-  }
-
-  .hero-subtitle {
-    font-size: 1rem;
-  }
-
-  .hero-actions .q-btn {
-    display: block;
-    width: 100%;
-    margin: 0 0 16px 0 !important;
-  }
-
-  .stat-item {
-    flex: 1;
-  }
-
-  .hero-image-wrapper {
-    height: 300px;
-    margin-top: 40px;
-  }
-
-  .floating-card {
-    padding: 15px;
-  }
-
-  .floating-card .q-icon {
-    font-size: 32px !important;
-  }
-
-  .floating-card .text-weight-bold {
-    font-size: 0.85rem;
-  }
-
-  .features-section,
-  .process-section,
-  .benefits-section,
-  .testimonials-section,
-  .faq-section,
-  .cta-section {
-    padding: 40px 0;
-  }
-
-  .text-h3 {
-    font-size: 1.75rem;
-  }
-
-  .process-number {
-    font-size: 2rem;
-    top: 15px;
-    right: 15px;
-  }
+/* ------------------------------------------------------------------ Footer */
+.lp-footer {
+  width: 100%;
+  padding: 64px 0 28px;
+  background: #0F0D2E;
+  color: rgba(255, 255, 255, 0.65);
 }
 
-@media (max-width: 400px) {
-  .hero-badge,
-  .section-badge {
-    font-size: 12px;
-    padding: 6px 12px;
-  }
-
-  .stat-number {
-    font-size: 1.5rem;
-  }
+.footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.4fr);
+  gap: 36px;
 }
 
-/* Professional Animations */
-.fade-in-up {
-  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+.footer-grid h4 {
+  margin: 0 0 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
 }
 
-.fade-in-left {
-  animation: fadeInLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+.footer-grid p {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  line-height: 1.6;
 }
 
-.fade-in-right {
-  animation: fadeInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+.footer-grid a {
+  display: block;
+  width: fit-content;
+  margin-bottom: 10px;
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
-.fade-in-scale {
-  animation: fadeInScale 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+.footer-grid a:hover {
+  color: var(--amber-light);
+  transform: translateX(4px);
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.footer-brand__mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--indigo), var(--indigo-800));
+}
+
+.footer-legal {
+  margin-top: 16px;
+}
+
+.footer-legal span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.footer-contact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  word-break: break-word;
+}
+
+.footer-bottom {
+  margin-top: 40px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ------------------------------------------------------------------ Aparición al hacer scroll */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* La tarjeta ya tiene su propia transición al pasar el mouse */
+.spot-card.reveal.is-visible {
+  transition-delay: 0ms;
+}
+
+.spot-card.reveal.is-visible:hover {
+  transform: translateY(-6px);
+}
+
+/* ------------------------------------------------------------------ Keyframes */
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes wordIn {
+  from { opacity: 0; transform: translateY(0.45em); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes blobMove {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(60px, 40px) scale(1.1); }
+  66% { transform: translate(-40px, 30px) scale(0.95); }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.8); }
+  50% { opacity: 0.9; transform: scale(1.2); }
+}
+
+@keyframes ping {
+  0% { box-shadow: 0 0 0 0 rgba(253, 184, 19, 0.7); }
+  80%, 100% { box-shadow: 0 0 0 10px rgba(253, 184, 19, 0); }
+}
+
+@keyframes shine {
+  0%, 60% { left: -60%; }
+  100% { left: 130%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
+}
+
+@keyframes bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -8px; }
+}
+
+@keyframes chipIn {
+  from { opacity: 0; scale: 0.8; }
+  to { opacity: 1; scale: 1; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes scrollDot {
+  0% { opacity: 0; transform: translateY(0); }
+  40% { opacity: 1; }
+  80%, 100% { opacity: 0; transform: translateY(14px); }
+}
+
+@keyframes marquee {
+  to { transform: translateX(calc(-50% - 7px)); }
+}
+
+@keyframes pulseRing {
+  0% { box-shadow: 0 0 0 0 rgba(253, 184, 19, 0.45); }
+  80%, 100% { box-shadow: 0 0 0 22px rgba(253, 184, 19, 0); }
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes fadeInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
+  from { opacity: 0; scale: 0.92; }
+  to { opacity: 1; scale: 1; }
+}
+
+/* ------------------------------------------------------------------ Responsive */
+@media (max-width: 1023px) {
+  .hero-section {
+    min-height: auto;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+
+  .hero-layout {
+    grid-template-columns: minmax(0, 1fr);
+    text-align: center;
+  }
+
+  .hero-subtitle {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-actions,
+  .hero-proof {
+    justify-content: center;
+  }
+
+  .hero-visual__img {
+    max-width: 460px;
+  }
+
+  .scroll-cue {
+    display: none;
+  }
+
+  .bento {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bento__main {
+    grid-row: auto;
+  }
+
+  .benefits-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .timeline {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
+  }
+
+  .timeline__line {
+    display: none;
+  }
+
+  .float-chip--left {
+    display: none;
+  }
+
+  .float-chip {
+    font-size: 0.75rem;
+    padding: 8px 10px;
+  }
+
+  .hero-actions .q-btn {
+    width: 100%;
+  }
+
+  .cta-floater--2,
+  .cta-floater--5 {
+    display: none;
+  }
+
+  .cta-floater {
+    opacity: 0.35;
+  }
+
+  .footer-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page *,
+  .landing-page *::before,
+  .landing-page *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .reveal,
+  .timeline__step {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .timeline__line span {
+    transform: scaleX(1);
   }
 }
 </style>

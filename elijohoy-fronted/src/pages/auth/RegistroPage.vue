@@ -458,6 +458,7 @@ import { defineComponent, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Notify } from 'quasar'
 import { useAuthStore } from 'src/stores/auth'
+import { useTestStore } from 'src/stores/test'
 
 export default defineComponent({
   name: 'RegistroPage',
@@ -465,6 +466,7 @@ export default defineComponent({
   setup() {
     const router = useRouter()
     const authStore = useAuthStore()
+    const testStore = useTestStore()
 
     const step = ref(1)
 
@@ -509,29 +511,45 @@ export default defineComponent({
       val => /[!@#$%^&*(),.?":{}|<>]/.test(val) || 'Debe contener al menos un símbolo'
     ])
 
-    // Fetch countries from REST Countries API
+    const COUNTRIES_API = 'https://countriesnow.space/api/v0.1/countries'
+
+    // Nombre del país en español a partir de su código ISO (el API devuelve nombres en inglés)
+    const regionNames = typeof Intl.DisplayNames === 'function'
+      ? new Intl.DisplayNames(['es'], { type: 'region' })
+      : null
+    const spanishName = (code, fallback) => {
+      try {
+        return regionNames?.of(code) || fallback
+      } catch {
+        return fallback
+      }
+    }
+
+    // name: lo que ve y guarda el usuario; apiName: el nombre que entiende el API de ciudades
     const fetchCountries = async () => {
       loadingCountries.value = true
       try {
-        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2')
-        const data = await response.json()
+        const response = await fetch(`${COUNTRIES_API}/iso`)
+        const { data } = await response.json()
         countries.value = data
           .map(country => ({
-            name: country.name.common,
-            code: country.cca2
+            name: spanishName(country.Iso2, country.name),
+            apiName: country.name,
+            code: country.Iso2
           }))
-          .sort((a, b) => a.name.localeCompare(b.name))
+          .sort((a, b) => a.name.localeCompare(b.name, 'es'))
         filteredCountries.value = countries.value
-        console.log(`Loaded ${countries.value.length} countries from REST Countries API`)
       } catch (error) {
         console.error('Error fetching countries:', error)
         countries.value = [
-          { name: 'Perú', code: 'PE' },
-          { name: 'Argentina', code: 'AR' },
-          { name: 'Chile', code: 'CL' },
-          { name: 'Colombia', code: 'CO' },
-          { name: 'México', code: 'MX' },
-          { name: 'España', code: 'ES' }
+          { name: 'Perú', apiName: 'Peru', code: 'PE' },
+          { name: 'Argentina', apiName: 'Argentina', code: 'AR' },
+          { name: 'Bolivia', apiName: 'Bolivia', code: 'BO' },
+          { name: 'Chile', apiName: 'Chile', code: 'CL' },
+          { name: 'Colombia', apiName: 'Colombia', code: 'CO' },
+          { name: 'Ecuador', apiName: 'Ecuador', code: 'EC' },
+          { name: 'México', apiName: 'Mexico', code: 'MX' },
+          { name: 'España', apiName: 'Spain', code: 'ES' }
         ]
         filteredCountries.value = countries.value
       } finally {
@@ -539,53 +557,21 @@ export default defineComponent({
       }
     }
 
-    // Helper function to convert country code to name for API
-    const getCountryNameByCode = (code) => {
-      const country = countries.value.find(c => c.code === code)
-      return country ? country.name : code
-    }
+    // Fetch cities from countriesnow API by country
+    const fetchCitiesByCountry = async (country) => {
+      if (!country) return
 
-    // Fetch cities from countriesnow API directly by country (principales ciudades)
-    const fetchCitiesByCountry = async (countryCode) => {
-      if (!countryCode) return
-      
       loadingCities.value = true
       try {
-        // Using countriesnow API to get all cities of a country
         const response = await fetch(
-          'https://countriesnow.space/api/v0.1/countries/cities',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              country: getCountryNameByCode(countryCode)
-            })
-          }
+          `${COUNTRIES_API}/cities/q?country=${encodeURIComponent(country.apiName || country.name)}`
         )
-        
-        if (response.ok) {
-          const data = await response.json()
-          console.log('Cities API response:', data)
-          
-          if (data.data && data.data.length > 0) {
-            // Get cities and sort alphabetically
-            const cityNames = [...new Set(data.data)]
-              .sort((a, b) => a.localeCompare(b))
-            cities.value = cityNames
-            filteredCities.value = cityNames
-            console.log(`Loaded ${cityNames.length} cities for country: ${countryCode}`)
-          } else {
-            cities.value = []
-            filteredCities.value = []
-            console.warn(`No cities found for country: ${countryCode}`)
-          }
-        } else {
-          console.error('Cities API error:', response.status)
-          cities.value = []
-          filteredCities.value = []
-        }
+        const data = response.ok ? await response.json() : null
+        const cityNames = data?.data?.length
+          ? [...new Set(data.data)].sort((a, b) => a.localeCompare(b, 'es'))
+          : []
+        cities.value = cityNames
+        filteredCities.value = cityNames
       } catch (error) {
         console.error('Error fetching cities:', error)
         cities.value = []
@@ -634,8 +620,7 @@ export default defineComponent({
         
         // Fetch cities for the selected country
         if (val.code) {
-          console.log(`Country changed to: ${val.name} (${val.code})`)
-          fetchCitiesByCountry(val.code)
+          fetchCitiesByCountry(val)
         }
       }
     }
@@ -677,27 +662,68 @@ export default defineComponent({
 
           // Verificar si hay respuestas de test en localStorage
           const respuestasGuardadas = localStorage.getItem('testRespuestas')
-
-          // Verificar si hay una finalización de test pendiente
           const pendingFinalization = localStorage.getItem('pendingTestFinalization')
 
-          if (pendingFinalization === 'true') {
-            console.log('Finalización de test pendiente, redirigiendo al test...')
-            // Mantener el indicador para que el test se finalice automáticamente
-            router.push('/dashboard/test')
-          } else if (respuestasGuardadas) {
-            console.log('Detectadas respuestas de test, se sincronizarán en la página del test...')
-            
-            Notify.create({
-              message: 'Respuestas detectadas, continuando con el test...',
-              color: 'positive',
-              icon: 'save',
-              position: 'top'
-            })
-            router.push('/dashboard/test')
-          } else {
-            router.push('/dashboard')
+          // Si hay test pendiente de finalización, procesarlo aquí
+          if ((pendingFinalization === 'true' || respuestasGuardadas) && respuestasGuardadas) {
+            console.log('Finalizando test pendiente después del registro...')
+            localStorage.removeItem('pendingTestFinalization')
+
+            try {
+              const respuestasParseadas = JSON.parse(respuestasGuardadas)
+              const cantidadRespuestas = Object.keys(respuestasParseadas).length
+
+              if (cantidadRespuestas >= 32) {
+                Notify.create({
+                  message: 'Procesando tu test...',
+                  color: 'info',
+                  icon: 'hourglass_empty',
+                  position: 'top'
+                })
+
+                // 1. Crear sesión de test
+                const sesionResponse = await testStore.iniciarTest()
+                if (!sesionResponse.success) {
+                  throw new Error('Error al crear sesión de test')
+                }
+
+                // 2. Sincronizar respuestas
+                const sincResponse = await testStore.sincronizarRespuestas(respuestasParseadas)
+                if (!sincResponse.success) {
+                  throw new Error('Error al sincronizar respuestas')
+                }
+
+                // 3. Finalizar test
+                const finResponse = await testStore.finalizarTest()
+                if (finResponse.success) {
+                  // Limpiar localStorage
+                  localStorage.removeItem('testRespuestas')
+
+                  Notify.create({
+                    message: '¡Test completado! Mostrando tus resultados...',
+                    color: 'positive',
+                    icon: 'check_circle',
+                    position: 'top'
+                  })
+
+                  // Redirigir a resultados
+                  router.push(`/dashboard/test-resultados/${testStore.getSesion.id_sesion}`)
+                  return
+                }
+              }
+            } catch (testError) {
+              console.error('Error al finalizar test:', testError)
+              Notify.create({
+                message: 'Error al procesar el test. Ve a Test Resultados.',
+                color: 'warning',
+                icon: 'warning',
+                position: 'top'
+              })
+            }
           }
+
+          // Si no hay test pendiente o falló, ir al dashboard
+          router.push('/dashboard')
         } else {
           Notify.create({
             message: result.message || 'Error al registrar usuario',

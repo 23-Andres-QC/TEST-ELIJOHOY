@@ -6,15 +6,11 @@
         <h1 class="test-title">Test de Personalidad</h1>
         <div class="progress-info">
           <div class="progress-text">
-            Progreso: <strong>{{ paginaActual + 1 }}</strong> de <strong>{{ totalPaginas }}</strong> páginas
+            Página <strong>{{ paginaActual + 1 }}</strong> de <strong>{{ totalPaginas }}</strong>
+            <span class="progress-count">&nbsp;· {{ respondidas }}/{{ preguntas.length }} respondidas</span>
           </div>
-          <div class="progress-dots">
-            <div
-              v-for="i in totalPaginas"
-              :key="i"
-              class="progress-dot"
-              :class="{ active: i <= paginaActual + 1, completed: i < paginaActual + 1 }"
-            ></div>
+          <div class="progress-bar">
+            <div class="progress-bar__fill" :style="{ width: progreso + '%' }"></div>
           </div>
         </div>
       </div>
@@ -26,7 +22,7 @@
           :key="pregunta.id_pregunta"
           class="question-card"
         >
-          <div class="question-number">Pregunta {{ (paginaActual * 3) + index + 1 }}</div>
+          <div class="question-number">{{ (paginaActual * 3) + index + 1 }}</div>
 
           <div class="question-options">
             <div class="option-label left">{{ pregunta.texto_izquierda }}</div>
@@ -131,7 +127,7 @@ const errorMessage = ref('')
 
 const PREGUNTAS_POR_PAGINA = 3
 // Tamaños crecientes de izquierda a derecha: 1→2→3→4→5
-const BUBBLE_SIZES = [32, 40, 48, 56, 64]
+const BUBBLE_SIZES = [26, 31, 36, 41, 46]
 
 const totalPaginas = computed(() => Math.ceil(preguntas.value.length / PREGUNTAS_POR_PAGINA))
 
@@ -149,73 +145,79 @@ const todasRespondidas = computed(() => {
   return preguntas.value.every(p => respuestas.value[p.id_pregunta])
 })
 
+const respondidas = computed(() => preguntas.value.filter(p => respuestas.value[p.id_pregunta]).length)
+
+const progreso = computed(() => (preguntas.value.length ? (respondidas.value / preguntas.value.length) * 100 : 0))
+
 async function finalizarTestAutomaticamente() {
   console.log('Iniciando finalización automática del test...')
 
-  // Verificar que todas las preguntas estén respondidas
-  if (!todasRespondidas.value) {
-    throw new Error('El test no está completo')
+  // Para la finalización automática, confiamos en que las respuestas están completas
+  // ya que el usuario completó el test antes de ir al login
+  const respuestasGuardadas = localStorage.getItem('testRespuestas')
+  if (!respuestasGuardadas) {
+    throw new Error('No hay respuestas guardadas')
   }
 
-  loading.value = true
+  const respuestasParseadas = JSON.parse(respuestasGuardadas)
+  const cantidadRespuestas = Object.keys(respuestasParseadas).length
+  console.log(`Respuestas encontradas: ${cantidadRespuestas}`)
+
+  // Verificar que hay al menos 32 respuestas (el test tiene 32 preguntas)
+  if (cantidadRespuestas < 32) {
+    throw new Error(`Test incompleto: ${cantidadRespuestas}/32 respuestas`)
+  }
 
   try {
-    // Si está autenticado, verificar si necesita crear sesión y sincronizar
-    if (authStore.isAuthenticated) {
-      // Si no tiene sesión activa, crear una y sincronizar respuestas
-      if (!testStore.getSesion) {
-        console.log('Creando sesión y sincronizando respuestas...')
-
-        // 1. Crear sesión de test
-        const sesionResponse = await testStore.iniciarTest()
-        if (!sesionResponse.success) {
-          throw new Error('Error al crear sesión de test')
-        }
-
-        // 2. Sincronizar respuestas del localStorage a la BD
-        const respuestasGuardadas = localStorage.getItem('testRespuestas')
-        if (respuestasGuardadas) {
-          const respuestasParseadas = JSON.parse(respuestasGuardadas)
-          const sincronizacionResponse = await testStore.sincronizarRespuestas(respuestasParseadas)
-
-          if (sincronizacionResponse.success) {
-            console.log('Respuestas sincronizadas exitosamente')
-            // Limpiar localStorage después de sincronizar
-            localStorage.removeItem('testRespuestas')
-          } else {
-            throw new Error('Error al sincronizar respuestas')
-          }
-        }
-      }
-
-      // Finalizar test
-      const response = await testStore.finalizarTest()
-
-      if (response.success) {
-        console.log('Test finalizado exitosamente')
-
-        $q.notify({
-          type: 'positive',
-          message: '¡Test completado! Tus resultados han sido guardados.',
-          icon: 'check_circle'
-        })
-
-        // Redirigir a resultados
-        router.push({
-          name: 'test-resultados',
-          params: { id: testStore.getSesion.id_sesion }
-        })
-      } else {
-        throw new Error(response.message || 'Error al finalizar el test')
-      }
-    } else {
+    // Verificar autenticación
+    if (!authStore.isAuthenticated) {
       throw new Error('Usuario no autenticado')
     }
-  } catch (error) {
-    console.error('Error en finalización automática:', error)
-    throw error
-  } finally {
-    loading.value = false
+
+    // Crear sesión si no existe
+    if (!testStore.getSesion) {
+      console.log('Creando sesión de test...')
+      const sesionResponse = await testStore.iniciarTest()
+      if (!sesionResponse.success) {
+        throw new Error('Error al crear sesión de test')
+      }
+    }
+
+    // Sincronizar respuestas
+    console.log('Sincronizando respuestas...')
+    const sincronizacionResponse = await testStore.sincronizarRespuestas(respuestasParseadas)
+
+    if (sincronizacionResponse.success) {
+      console.log('Respuestas sincronizadas exitosamente')
+      localStorage.removeItem('testRespuestas')
+    } else {
+      throw new Error('Error al sincronizar respuestas')
+    }
+
+    // Finalizar test
+    console.log('Finalizando test...')
+    const response = await testStore.finalizarTest()
+
+    if (response.success) {
+      console.log('Test finalizado exitosamente, redirigiendo a resultados...')
+
+      $q.notify({
+        type: 'positive',
+        message: '¡Test completado! Redirigiendo a tus resultados...',
+        icon: 'check_circle'
+      })
+
+      // Redirigir a resultados
+      router.push({
+        name: 'test-resultados',
+        params: { id: testStore.getSesion.id_sesion }
+      })
+    } else {
+      throw new Error(response.message || 'Error al finalizar el test')
+    }
+  } catch (err) {
+    console.error('Error en finalización automática:', err)
+    throw err
   }
 }
 
@@ -299,11 +301,10 @@ async function finalizar() {
             throw new Error('Error al crear sesión de test')
           }
 
-          // 2. Sincronizar respuestas del localStorage a la BD
-          const respuestasGuardadas = localStorage.getItem('testRespuestas')
-          if (respuestasGuardadas) {
-            const respuestasParseadas = JSON.parse(respuestasGuardadas)
-            const sincronizacionResponse = await testStore.sincronizarRespuestas(respuestasParseadas)
+          // 2. Sincronizar respuestas del ESTADO actual a la BD
+          if (Object.keys(respuestas.value).length > 0) {
+            console.log('Sincronizando respuestas:', Object.keys(respuestas.value).length)
+            const sincronizacionResponse = await testStore.sincronizarRespuestas(respuestas.value)
 
             if (sincronizacionResponse.success) {
               console.log('Respuestas sincronizadas exitosamente')
@@ -330,10 +331,10 @@ async function finalizar() {
           message: 'Test completado exitosamente'
         })
 
-        // Redirigir a resultados
+        // Redirigir a resultados usando el ID de sesión de la respuesta
         router.push({
           name: 'test-resultados',
-          params: { id: testStore.getSesion.id_sesion }
+          params: { id: response.id_sesion }
         })
       } else {
         throw new Error(response.message || 'Error al finalizar el test')
@@ -392,6 +393,10 @@ onMounted(async () => {
       } catch (error) {
         console.log('No hay sesiones existentes o error al cargar:', error.message)
       }
+    } else if (!authStore.isAuthenticated) {
+      // Si no está autenticado, intentar restaurar sesión local
+      console.log('👤 Usuario no autenticado, intentando restaurar sesión local...')
+      testStore.restaurarSesion()
     }
 
     // Cargar respuestas guardadas en localStorage si existen
@@ -399,26 +404,41 @@ onMounted(async () => {
     if (respuestasGuardadas) {
       respuestas.value = JSON.parse(respuestasGuardadas)
       console.log('Respuestas restauradas de localStorage:', respuestas.value)
+      // Sincronizar progreso en el store
+      testStore.respuestas = respuestas.value
+      testStore.progreso = Object.keys(respuestas.value).length
+      console.log('Progreso sincronizado:', testStore.progreso)
     }
 
     // Verificar si hay una finalización de test pendiente
     const pendingFinalization = localStorage.getItem('pendingTestFinalization')
-    if (pendingFinalization === 'true' && authStore.isAuthenticated && respuestasGuardadas) {
+    if (pendingFinalization === 'true' && authStore.isAuthenticated) {
       console.log('Finalización de test pendiente detectada, procediendo automáticamente...')
 
-      // Limpiar el indicador
+      // Limpiar el indicador ANTES de procesar para evitar bucles
       localStorage.removeItem('pendingTestFinalization')
 
-      // Proceder con la finalización automática
-      try {
-        // Simular click en finalizar para procesar automáticamente
-        await finalizarTestAutomaticamente()
-      } catch (error) {
-        console.error('Error en finalización automática:', error)
+      // Verificar que hay respuestas
+      if (respuestasGuardadas && Object.keys(respuestas.value).length > 0) {
+        // Proceder con la finalización automática
+        try {
+          loading.value = true
+          await finalizarTestAutomaticamente()
+        } catch (err) {
+          console.error('Error en finalización automática:', err)
+          loading.value = false
+          $q.notify({
+            type: 'negative',
+            message: 'Error al finalizar el test. Por favor presiona "Finalizar Test".',
+            icon: 'error'
+          })
+        }
+      } else {
+        console.warn('No hay respuestas guardadas para finalizar')
         $q.notify({
-          type: 'negative',
-          message: 'Error al finalizar el test automáticamente',
-          icon: 'error'
+          type: 'warning',
+          message: 'No se encontraron respuestas del test. Complete el test nuevamente.',
+          icon: 'warning'
         })
       }
     }
@@ -437,570 +457,295 @@ onMounted(async () => {
 .test-page {
   background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
   min-height: calc(100vh - 64px);
-  height: 100%;
-  padding: 16px;
+  padding: clamp(12px, 3vh, 28px) 16px;
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1040px;
   width: 100%;
   margin: 0 auto;
-  padding: 8px;
 }
 
-/* Header */
+/* Header: título y progreso en una sola franja */
 .test-header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 32px;
+  flex-wrap: wrap;
   margin-bottom: 16px;
 }
 
 .test-title {
-  font-size: 2.5rem;
+  margin: 0;
+  font-size: clamp(1.4rem, 2.6vw, 1.85rem);
   font-weight: 800;
-  background: linear-gradient(135deg,
-    #6366F1 0%,
-    #EC4899 50%,
-    #F59E0B 100%);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #6366F1 0%, #EC4899 50%, #F59E0B 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 8px;
-  letter-spacing: -0.02em;
 }
 
 .progress-info {
-  margin-top: 8px;
+  flex: 1;
+  min-width: 240px;
+  max-width: 420px;
 }
 
 .progress-text {
-  font-size: 1.1rem;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #374151;
-  margin-bottom: 16px;
+  text-align: right;
 }
 
 .progress-text strong {
-  background: linear-gradient(135deg, #6366F1, #EC4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-size: 1.2rem;
+  color: #6366F1;
 }
 
-.progress-dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.progress-count {
+  font-weight: 500;
+  color: #64748B;
 }
 
-.progress-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(156, 163, 175, 0.3);
-  transition: all 0.3s ease;
-}
-
-.progress-dot.active {
-  background: linear-gradient(135deg, #6366F1, #EC4899);
-  transform: scale(1.2);
-}
-
-.progress-dot.completed {
-  background: linear-gradient(135deg, #10B981, #059669);
-}
-
-/* Questions Container */
-.questions-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.question-card {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 24px;
-  padding: 16px;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-  position: relative;
+.progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.15);
   overflow: hidden;
 }
 
-.question-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg,
-    rgba(99, 102, 241, 0.02) 0%,
-    rgba(236, 72, 153, 0.02) 50%,
-    rgba(245, 158, 11, 0.02) 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
+.progress-bar__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6366F1, #EC4899);
+  transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Preguntas */
+.questions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.question-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  box-shadow: 0 6px 20px -10px rgba(30, 27, 75, 0.25);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .question-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(99, 102, 241, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.question-card:hover::before {
-  opacity: 1;
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 12px 28px -12px rgba(79, 70, 229, 0.35);
 }
 
 .question-number {
-  font-size: 0.95rem;
-  font-weight: 700;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #fff;
   background: linear-gradient(135deg, #6366F1, #EC4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 12px;
-  text-align: center;
 }
 
 .question-options {
-  display: flex;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 24px;
-  justify-content: center;
+  gap: 16px;
 }
 
 .option-label {
-  flex: 1;
-  max-width: 350px;
-  font-size: 1.15rem;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.98rem;
   font-weight: 600;
+  line-height: 1.35;
   color: #1F2937;
-  line-height: 1.6;
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   text-align: center;
   text-transform: none !important;
 }
 
 .option-label.left {
-  background: linear-gradient(135deg,
-    rgba(99, 102, 241, 0.12) 0%,
-    rgba(99, 102, 241, 0.06) 100%);
-  border-left: 3px solid rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.08);
+  border-left: 3px solid rgba(99, 102, 241, 0.5);
 }
 
 .option-label.right {
-  background: linear-gradient(135deg,
-    rgba(245, 158, 11, 0.12) 0%,
-    rgba(245, 158, 11, 0.06) 100%);
-  border-right: 3px solid rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.1);
+  border-right: 3px solid rgba(245, 158, 11, 0.55);
 }
 
-/* Bubbles Selector - Sistema de escala 1-5 creciente */
+/* Burbujas - escala 1 (pequeña) a 5 (grande) */
 .bubbles-selector {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 20px 16px;
-  position: relative;
-  margin: 20px 0;
-  min-width: 300px;
+  gap: 12px;
+  padding: 4px;
 }
 
-/* Escala creciente de izquierda a derecha: 1 (pequeño) → 5 (grande) */
 .bubble {
+  flex: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(226, 232, 240, 0.95) 0%, rgba(203, 213, 225, 0.95) 100%);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  border: 2px solid rgba(148, 163, 184, 0.3);
-  overflow: hidden;
+  background: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 100%);
+  border: 2px solid rgba(148, 163, 184, 0.45);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.bubble::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 50%;
-  background: linear-gradient(135deg,
-    rgba(100, 116, 139, 0.1) 0%,
-    rgba(148, 163, 184, 0.1) 100%);
-  opacity: 0;
-  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-  z-index: -1;
-}
-
-/* Hover effect - azul suave */
 .bubble:hover {
-  transform: scale(1.15);
-  box-shadow:
-    0 8px 24px rgba(59, 130, 246, 0.25),
-    0 0 0 1px rgba(59, 130, 246, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  border-color: rgba(59, 130, 246, 0.5);
-  background: linear-gradient(135deg, rgba(191, 219, 254, 0.95) 0%, rgba(147, 197, 253, 0.95) 100%);
+  transform: scale(1.12);
+  border-color: rgba(99, 102, 241, 0.6);
+  background: linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%);
 }
 
-.bubble:hover::before {
-  opacity: 0.8;
-  background: linear-gradient(135deg,
-    rgba(59, 130, 246, 0.2) 0%,
-    rgba(96, 165, 250, 0.2) 100%);
-}
-
-/* Seleccionado - azul brillante */
 .bubble.selected {
-  background: linear-gradient(135deg,
-    rgba(37, 99, 235, 1) 0%,
-    rgba(59, 130, 246, 1) 100%);
-  box-shadow:
-    0 8px 32px rgba(59, 130, 246, 0.5),
-    0 0 0 4px rgba(255, 255, 255, 0.8),
-    0 0 24px rgba(59, 130, 246, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  border-color: rgba(255, 255, 255, 0.8);
-  transform: scale(1.2);
-  animation: bubble-pulse 2s ease-in-out infinite;
-}
-
-.bubble.selected::before {
-  opacity: 1;
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.35) 0%,
-    rgba(255, 255, 255, 0.15) 100%);
-  animation: bubble-shimmer 3s linear infinite;
-}
-
-/* Animaciones mejoradas */
-@keyframes bubble-pulse {
-  0%, 100% {
-    box-shadow:
-      0 8px 32px rgba(59, 130, 246, 0.5),
-      0 0 0 4px rgba(255, 255, 255, 0.8),
-      0 0 24px rgba(59, 130, 246, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  }
-  50% {
-    box-shadow:
-      0 12px 48px rgba(59, 130, 246, 0.7),
-      0 0 0 5px rgba(255, 255, 255, 0.9),
-      0 0 32px rgba(59, 130, 246, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  }
-}
-
-@keyframes bubble-shimmer {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  transform: scale(1.12);
+  border-color: #fff;
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35), 0 6px 16px rgba(79, 70, 229, 0.45);
 }
 
 .bubble-inner {
+  width: 36%;
+  height: 36%;
   border-radius: 50%;
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.4) 0%,
-    rgba(255, 255, 255, 0.2) 100%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-  box-shadow:
-    inset 0 2px 4px rgba(0, 0, 0, 0.1),
-    0 2px 8px rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
 .bubble.selected .bubble-inner {
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.75) 0%,
-    rgba(255, 255, 255, 0.45) 100%);
-  transform: scale(0.85);
-  box-shadow:
-    inset 0 4px 8px rgba(0, 0, 0, 0.15),
-    0 4px 16px rgba(255, 255, 255, 0.4);
-  border-color: rgba(255, 255, 255, 0.6);
-}
-
-/* Indicadores de escala opcionales (números) */
-.bubbles-selector::after {
-  content: '1 → 5';
-  position: absolute;
-  bottom: -4px;
-  font-size: 0.75rem;
-  color: rgba(100, 116, 139, 0.6);
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  background: #fff;
 }
 
 /* Loading */
 .loading-container {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-radius: 24px;
-  padding: 60px;
+  padding: 48px;
+  border-radius: 18px;
   text-align: center;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 20px -10px rgba(30, 27, 75, 0.25);
 }
 
 .loading-container p {
-  margin-top: 24px;
-  font-size: 1.2rem;
+  margin: 16px 0 0;
+  font-size: 1.05rem;
   font-weight: 600;
-  color: #4B5563;
-  background: linear-gradient(135deg, #6366F1, #EC4899);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #6366F1;
 }
 
-/* Navigation Buttons */
+/* Navegación */
 .navigation-buttons {
   display: flex;
   justify-content: space-between;
-  margin-top: 40px;
-  gap: 24px;
+  gap: 16px;
+  margin-top: 18px;
 }
 
 .nav-btn {
-  font-size: 1.1rem;
-  padding: 16px 36px;
-  border-radius: 16px;
+  padding: 8px 26px;
+  border-radius: 12px;
+  font-size: 1rem;
   font-weight: 600;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  position: relative;
-  overflow: hidden;
-}
-
-.nav-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent);
-  transition: left 0.6s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nav-btn:hover:not(:disabled) {
-  transform: translateY(-4px);
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(99, 102, 241, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.nav-btn:hover:not(:disabled)::before {
-  left: 100%;
-}
-
-.nav-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -10px rgba(79, 70, 229, 0.6);
 }
 
 .finish-btn {
-  background: linear-gradient(135deg,
-    rgba(16, 185, 129, 0.9) 0%,
-    rgba(5, 150, 105, 0.9) 100%);
-  color: white;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #fff;
 }
 
-.finish-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg,
-    rgba(16, 185, 129, 1) 0%,
-    rgba(5, 150, 105, 1) 100%);
-  box-shadow:
-    0 20px 60px rgba(16, 185, 129, 0.3),
-    0 0 0 1px rgba(16, 185, 129, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+.error-notification {
+  margin-top: 16px;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .test-page {
-    min-height: calc(100vh - 60px);
-    padding: 12px;
-  }
-
-  .test-header {
-    margin-bottom: 16px;
-  }
-
-  .test-title {
-    font-size: 2rem;
-  }
-
+@media (max-width: 860px) {
   .question-card {
-    padding: 14px;
+    align-items: flex-start;
   }
 
   .question-options {
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .option-label.left,
-  .option-label.right {
-    text-align: center;
-    padding: 12px;
-    font-size: 1.1rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
   }
 
   .bubbles-selector {
-    gap: 16px;
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 600px) {
+  .test-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .progress-info {
+    max-width: none;
+  }
+
+  .progress-text {
+    text-align: left;
+  }
+
+  .question-card {
     padding: 12px;
-    margin: 12px 0;
+    gap: 10px;
+  }
+
+  .question-number {
+    width: 26px;
+    height: 26px;
+    font-size: 0.78rem;
+  }
+
+  .option-label {
+    padding: 8px 10px;
+    font-size: 0.9rem;
+  }
+
+  .bubbles-selector {
+    gap: 10px;
   }
 
   .navigation-buttons {
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 24px;
+    flex-direction: column-reverse;
   }
 
   .nav-btn {
     width: 100%;
-    padding: 14px 24px;
-  }
-}
-
-@media (max-width: 480px) {
-  .test-page {
-    padding: 10px;
-  }
-
-  .test-header {
-    margin-bottom: 12px;
-  }
-
-  .test-title {
-    font-size: 1.8rem;
-  }
-
-  .question-card {
-    padding: 12px;
-  }
-
-  .question-number {
-    font-size: 0.85rem;
-    margin-bottom: 10px;
-  }
-
-  .option-label {
-    font-size: 1rem;
-    padding: 10px;
-  }
-
-  .bubbles-selector {
-    gap: 12px;
-    padding: 10px;
-    margin: 10px 0;
-  }
-
-  .nav-btn {
-    font-size: 1rem;
-    padding: 12px 20px;
-  }
-}
-
-@media (max-height: 700px) {
-  .test-page {
-    padding: 8px;
-  }
-  
-  .test-header {
-    margin-bottom: 8px;
-  }
-  
-  .test-title {
-    font-size: 1.8rem;
-    margin-bottom: 4px;
-  }
-  
-  .progress-text {
-    font-size: 1rem;
-    margin-bottom: 8px;
-  }
-  
-  .questions-container {
-    gap: 12px;
-  }
-  
-  .question-card {
-    padding: 10px;
-  }
-  
-  .option-label {
-    padding: 10px;
-    font-size: 1rem;
-  }
-  
-  .bubbles-selector {
-    padding: 8px;
-    margin: 8px 0;
-    gap: 12px;
-  }
-  
-  .navigation-buttons {
-    margin-top: 16px;
-    gap: 12px;
-  }
-  
-  .nav-btn {
-    padding: 12px 24px;
-  }
-  
-  .loading-container {
-    padding: 40px;
   }
 }
 </style>

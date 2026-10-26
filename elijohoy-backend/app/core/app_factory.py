@@ -17,13 +17,18 @@ def create_app(config_name=None):
     # Inicializar extensiones
     db.init_app(app)
     jwt.init_app(app)
+    # Configurar CORS para todas las rutas de la API
     cors.init_app(
-        app, 
-        resources={r"/*": {"origins": app.config['ALLOWED_ORIGINS']}},
+        app,
+        origins=app.config['ALLOWED_ORIGINS'],
         supports_credentials=True,
-        allow_headers=["Content-Type", "Authorization"],
-        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        expose_headers=["Content-Type", "Authorization"]
     )
+
+    # Log de CORS para debug
+    app.logger.info(f"CORS configurado para orígenes: {app.config['ALLOWED_ORIGINS']}")
     mail.init_app(app)
     limiter.init_app(app)
     
@@ -52,11 +57,22 @@ def create_app(config_name=None):
         })
 
     @app.route('/health')
+    @app.route('/api/health')
     def health():
+        """Health check endpoint para Docker y Nginx."""
+        try:
+            # Verificar conexión a la base de datos
+            db.session.execute(db.text('SELECT 1'))
+            db_status = 'connected'
+        except Exception as e:
+            app.logger.error(f"Database health check failed: {e}")
+            db_status = 'disconnected'
+        
         return jsonify({
             'status': 'healthy',
-            'database': 'connected' if db.engine else 'disconnected'
-        })
+            'database': db_status,
+            'environment': app.config.get('ENV', 'unknown')
+        }), 200 if db_status == 'connected' else 503
 
     return app
 
@@ -124,8 +140,7 @@ def register_commands(app):
                 usuario_id=admin_user.id,
                 nombre=nombre,
                 apellidos=apellidos,
-                edad=edad,
-                email=email
+                edad=edad
             )
             db.session.add(admin_alumno)
 

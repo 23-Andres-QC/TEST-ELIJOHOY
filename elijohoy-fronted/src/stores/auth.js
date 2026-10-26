@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import AuthService from 'src/services/auth'
+import { useTestStore } from 'src/stores/test'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -23,8 +24,16 @@ export const useAuthStore = defineStore('auth', () => {
     const userData = sessionStorage.getItem('user')
 
     if (token && userData) {
-      user.value = JSON.parse(userData)
-      isAuthenticated.value = true
+      try {
+        user.value = JSON.parse(userData)
+        isAuthenticated.value = true
+      } catch (e) {
+        console.error('Error al parsear userData:', e)
+        sessionStorage.removeItem('user')
+        sessionStorage.removeItem('access_token')
+        user.value = null
+        isAuthenticated.value = false
+      }
     } else {
       user.value = null
       isAuthenticated.value = false
@@ -90,10 +99,43 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const logout = () => {
-    sessionStorage.clear()
-    user.value = null
-    isAuthenticated.value = false
+  const logout = async () => {
+    try {
+      const result = await AuthService.logout()
+
+      if (!result.success) {
+        console.warn('Logout server failed, but clearing local session:', result.message)
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Continue with local logout even if there's an error
+    } finally {
+      // Limpiar sessionStorage
+      sessionStorage.clear()
+
+      // Limpiar localStorage de datos de autenticación
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('user')
+      localStorage.removeItem('user_data')
+      localStorage.removeItem('user_token')
+      localStorage.removeItem('idUsuario')
+
+      // Limpiar localStorage de test
+      localStorage.removeItem('testSesionLocal')
+      localStorage.removeItem('testRespuestas')
+      localStorage.removeItem('pendingTestFinalization')
+
+      // Limpiar estado
+      user.value = null
+      isAuthenticated.value = false
+
+      // Limpiar también el estado del test al hacer logout
+      const testStore = useTestStore()
+      testStore.limpiarTest()
+
+      console.log('✅ Logout completado y datos limpiados')
+    }
   }
 
   const refreshUser = async () => {

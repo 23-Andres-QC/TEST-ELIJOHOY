@@ -2,12 +2,20 @@
 node_modules/
 elijohoy-fronted/node_modules/
 elijohoy-backend/node_modules/
-*.env
 *.pyc
 __pycache__/
 logs/
 .DS_Store
-.env
 .vscode/
 .idea/
 *.log
+
+# Ignorar archivos .env EXCEPTO .env.production
+.env
+.env.local
+.env.*.local
+elijohoy-backend/.env
+
+# Permitir .env.production
+!.env.production
+
